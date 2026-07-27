@@ -1,0 +1,143 @@
+version: '3.8'
+
+x-shared: &shared
+  restart: unless-stopped
+  networks:
+    - academia-net
+
+services:
+  postgres:
+    <<: *shared
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: academia
+      POSTGRES_USER: academia
+      POSTGRES_PASSWORD: academia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    <<: *shared
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  neo4j:
+    <<: *shared
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/academia
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+
+  qdrant:
+    <<: *shared
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+  minio:
+    <<: *shared
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: academia
+      MINIO_ROOT_PASSWORD: academia123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  backend:
+    <<: *shared
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://academia:academia@postgres:5432/academia
+      REDIS_URL: redis://redis:6379/0
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: academia
+      QDRANT_URL: http://qdrant:6333
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: academia
+      MINIO_SECRET_KEY: academia123
+    depends_on:
+      - postgres
+      - redis
+      - neo4j
+      - qdrant
+      - minio
+
+  celery-worker:
+    <<: *shared
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://academia:academia@postgres:5432/academia
+      REDIS_URL: redis://redis:6379/0
+      NEO4J_URI: bolt://neo4j:7687
+      QDRANT_URL: http://qdrant:6333
+    depends_on:
+      - backend
+      - redis
+
+  celery-beat:
+    <<: *shared
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app beat --loglevel=info
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+
+  frontend:
+    <<: *shared
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+  nginx:
+    <<: *shared
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres-data:
+  neo4j-data:
+  qdrant-data:
+  minio-data:
+
+networks:
+  academia-net:
+    driver: bridge
