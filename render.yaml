@@ -1,0 +1,23 @@
+services:
+  # ── Backend API ─────────────────────────────────────────────────
+  - type: web
+    name: academia-ai-backend
+    runtime: python
+    region: oregon
+    plan: starter
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app.main:app --worker-class uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --timeout 120 --access-logfile -
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
