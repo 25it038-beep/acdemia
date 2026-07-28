@@ -1,1 +1,3 @@
+# Root requirements.txt — references backend package list
+# Run: pip install -r backend/requirements.txt
 -r backend/requirements.txt
