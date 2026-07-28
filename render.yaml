@@ -1,22 +1,16 @@
 services:
-  # ── Backend API ─────────────────────────────────────────────────
+  # ── Backend API (Docker runtime) ────────────────────────────────
   - type: web
     name: academia-ai-backend
-    runtime: python
+    runtime: docker
     region: oregon
     plan: starter
     rootDir: backend
+    dockerfilePath: ./backend/Dockerfile   # path from repo root
 
-    # pip upgrade first prevents metadata-generation-failed on old pip
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install --no-cache-dir -r requirements.txt
-    startCommand: gunicorn app.main:app --worker-class uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:$PORT --timeout 120 --access-logfile -
     healthCheckPath: /api/health
 
     envVars:
-      # ── Python version: 3.12.8 (all deps have prebuilt cp312 manylinux wheels)
-      - key: PYTHON_VERSION
-        value: 3.12.8
-
       - key: ENV
         value: production
 
@@ -35,9 +29,3 @@ services:
       # ── Auto-generated secure secret
       - key: SECRET_KEY
         generateValue: true
-
-      # ── pip options: only binary wheels, no source compilation, no Rust
-      - key: PIP_ONLY_BINARY
-        value: ":all:"
-      - key: PIP_NO_BUILD_ISOLATION
-        value: "0"
