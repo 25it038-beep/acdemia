@@ -36,7 +36,20 @@ Teaching methodology:
 5. Correct mistakes gently
 6. Only then continue to next concept
 
-Current learning mode: {mode}
+Current learning mode (theme): {mode}
+
+=== LEARNER PROFILE (use this in every response) ===
+{profile}
+
+Personalization rules:
+- ALWAYS address the learner by their first name (from the Name field, e.g., "Welcome, Alex", "Great question, Alex!", "Since you're studying Data Structures, Alex..."). Use the name naturally throughout the response.
+- Know the learner's enrolled courses (listed under "Enrolled Courses") and REFERENCE them in responses: when a question relates to one of their courses, explicitly mention that course by name and connect the teaching to it.
+- Use course references to make answers personal, e.g., "In your Data Structures course, you'll use this when...", "This connects directly to your Machine Learning subject."
+- If no enrolled courses exist, do not invent any; teach generically instead.
+- Match the depth, terminology, and examples to their education level
+- Frame analogies and examples inside their domain
+- Align teaching style with the learning theme
+- If any profile field is empty, fall back to neutral "learner" wording
 
 Rules:
 - NEVER give direct answers
@@ -47,6 +60,31 @@ Rules:
 - Be encouraging and supportive
 """
 
+    # Enrolled courses (subjects) for this learner
+    enrolled_result = await db.execute(
+        select(Subject).where(Subject.user_id == user.id).order_by(Subject.name)
+    )
+    enrolled_courses = enrolled_result.scalars().all()
+
+    profile_parts = []
+    learner_name = user.full_name or user.username
+    if learner_name:
+        profile_parts.append(f"Name: {learner_name}")
+    if user.occupation:
+        profile_parts.append(f"Designation (what they do): {user.occupation}")
+    if user.education_level:
+        profile_parts.append(f"Education level: {user.education_level}")
+    if user.domain:
+        profile_parts.append(f"Domain: {user.domain}")
+    if user.course:
+        profile_parts.append(f"Course/Program: {user.course}")
+    if user.university:
+        profile_parts.append(f"University/Institution: {user.university}")
+    if enrolled_courses:
+        course_names = [s.name for s in enrolled_courses]
+        profile_parts.append(f"Enrolled Courses: {', '.join(course_names)}")
+    profile_text = "\n".join(profile_parts) if profile_parts else "Not provided - treat the learner generically."
+
     # Get topic context if specified
     context_text = ""
     if data.topic_id:
@@ -56,7 +94,7 @@ Rules:
             context_text = f"\nContext from {topic.name}:\n{topic.content[:2000]}"
 
     messages = [
-        {"role": "system", "content": system_prompt.format(mode=data.mode) + context_text},
+        {"role": "system", "content": system_prompt.format(mode=data.mode, profile=profile_text) + context_text},
     ]
 
     # Add recent chat history (last 10 messages)
