@@ -1,12 +1,13 @@
 services:
-  # ── Backend API (Docker runtime) ────────────────────────────────
+  # ── Backend API (Python runtime) ──────────────────────────────────
   - type: web
     name: academia-ai-backend
-    runtime: docker
+    runtime: python
     region: oregon
     plan: starter
     rootDir: backend
-    dockerfilePath: ./backend/Dockerfile   # path from repo root
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
 
     healthCheckPath: /api/health
 
