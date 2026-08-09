@@ -1,0 +1,1 @@
+Binary trees are a fundamental data structure in computer science. Each node has at most two children. They are used in search algorithms, sorting, and expression parsing. A binary search tree maintains the property that left child values are less than the parent and right child values are greater.

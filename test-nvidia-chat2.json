@@ -1,0 +1,1 @@
+{"model":"nvidia/nemotron-3-ultra-550b-a55b","messages":[{"role":"user","content":"Say hello in one word"}],"max_tokens":20}

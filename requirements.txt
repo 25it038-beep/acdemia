@@ -1,0 +1,4 @@
+# Root requirements.txt
+# Install via: pip install -r backend/requirements.txt
+# Target: Python 3.12 | All packages have prebuilt cp312 manylinux wheels
+-r backend/requirements.txt

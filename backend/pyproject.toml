@@ -1,0 +1,41 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[project]
+name = "academia-ai"
+version = "1.0.0"
+description = "AI Learning Operating System"
+# Python 3.12 — all dependencies have prebuilt cp312 manylinux wheels on PyPI
+# Do NOT use Python 3.13 or 3.14 — pydantic-core, asyncpg, grpcio lack stable wheels
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115.5",
+    "uvicorn[standard]>=0.32.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.29.0",           # 0.29.0+ ships cp312 manylinux wheels
+    "alembic>=1.14.0",
+    "redis>=5.2.0",
+    "celery>=5.4.0",
+    "pydantic>=2.10.0",          # pydantic-core 2.x ships cp312 manylinux wheels
+    "pydantic-settings>=2.7.0",
+    "PyJWT>=2.10.0",             # Replaces python-jose (unmaintained, broken on 3.12)
+    "cryptography>=44.0.0",
+    "bcrypt>=4.2.0",             # Used directly; replaces passlib (unmaintained)
+    "python-multipart>=0.0.12",
+    "qdrant-client>=1.12.0",
+    "grpcio>=1.68.0",            # Pinned; cp312 wheels available from 1.66+
+    "openai>=1.57.0",
+    "httpx>=0.28.0",
+    "numpy>=2.1.0",              # cp312 manylinux wheel; ABI stable with scikit-learn 1.5+
+    "scikit-learn>=1.5.2",
+]
+
+[build-system]
+# No Rust or C compilation triggered by this build backend
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

@@ -1,0 +1,31 @@
+services:
+  # ── Backend API (Docker runtime) ────────────────────────────────
+  - type: web
+    name: academia-ai-backend
+    runtime: docker
+    region: oregon
+    plan: starter
+    rootDir: backend
+    dockerfilePath: ./backend/Dockerfile   # path from repo root
+
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: ENV
+        value: production
+
+      # ── Database (set in Render dashboard)
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+      # ── AI Keys (set in Render dashboard)
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # ── Auto-generated secure secret
+      - key: SECRET_KEY
+        generateValue: true

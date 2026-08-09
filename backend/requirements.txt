@@ -1,0 +1,94 @@
+# =============================================================================
+# Academia AI — Backend Requirements
+# Target: Python 3.12 | Platform: Linux (manylinux_2_17_x86_64)
+# All packages verified to have prebuilt cp312 wheels — zero Rust/C compilation
+# =============================================================================
+
+# ── Core API Framework ────────────────────────────────────────────────────────
+fastapi==0.115.5              # Latest stable; native Pydantic v2 support
+uvicorn[standard]==0.32.1     # ASGI server with websockets + httptools
+gunicorn==23.0.0              # Production process manager
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.36            # Async-capable ORM; cp312 pure-Python + C ext wheel
+asyncpg==0.29.0               # PostgreSQL async driver; cp312-cp312-manylinux wheel ✅
+aiosqlite==0.21.0             # SQLite async driver for local/dev fallback
+psycopg2-binary==2.9.9        # PostgreSQL sync driver (required by SQLAlchemy for some operations)
+alembic==1.14.0               # DB migrations; pure Python
+
+# ── Cache / Task Queue ────────────────────────────────────────────────────────
+redis==5.2.1                  # Redis client; pure Python ✅
+celery==5.4.0                 # Task queue; pure Python ✅
+
+# ── Validation / Config ───────────────────────────────────────────────────────
+pydantic==2.10.3              # Latest stable; pydantic-core ships cp312 manylinux wheel ✅
+pydantic-settings==2.7.0      # Settings management; pure Python
+
+# ── Auth / Security ───────────────────────────────────────────────────────────
+# python-jose is UNMAINTAINED and broken on Python 3.12 (DeprecationWarning + JWT vuln)
+# Replaced with PyJWT (actively maintained, pure Python, no Rust)
+PyJWT==2.10.1                 # JWT encode/decode; pure Python ✅
+cryptography==44.0.0          # PyJWT[crypto] dep; manylinux cp312 wheel ✅
+bcrypt==4.2.1                 # Password hashing; cp312 manylinux wheel ✅
+# passlib is UNMAINTAINED and broken with bcrypt>=4.1.0 — using bcrypt directly
+python-multipart==0.0.12      # Form/multipart parsing; pure Python ✅
+
+# ── File Processing ───────────────────────────────────────────────────────────
+Pillow==11.0.0                # Image processing; cp312 manylinux wheel ✅
+pytesseract==0.3.13           # OCR wrapper (requires tesseract system pkg); pure Python
+pdfplumber==0.11.4            # PDF extraction; pure Python ✅
+python-docx==1.1.2            # Word docs; pure Python ✅
+openpyxl==3.1.5               # Excel; pure Python ✅
+python-pptx==1.0.2            # PowerPoint; pure Python ✅
+markdown==3.7                 # Markdown parser; pure Python ✅
+beautifulsoup4==4.12.3        # HTML parsing; pure Python ✅
+lxml==5.3.0                   # XML/HTML; cp312-cp312-manylinux wheel ✅
+yt-dlp==2024.11.4             # YouTube DL; pure Python ✅
+pypdf==4.3.1                  # PDF (replaces deprecated PyPDF2); pure Python ✅
+ebooklib==0.18                # EPUB; pure Python ✅
+
+# ── AI / LLM ──────────────────────────────────────────────────────────────────
+openai==1.58.1                # OpenAI + NVIDIA NIM compatible; pure Python ✅ (>=1.58.1 required by langchain-openai)
+httpx==0.28.1                 # Async HTTP; pure Python ✅
+anthropic==0.42.0             # Anthropic SDK; pure Python ✅
+
+# ── LangChain (Pydantic v2 native since 0.3) ─────────────────────────────────
+langchain==0.3.13             # Latest 0.3.x; full Pydantic v2 support ✅
+langchain-community==0.3.13   # Community integrations ✅
+langchain-openai==0.2.14      # OpenAI/NVIDIA NIM integration ✅
+
+# ── ML / Numerics ─────────────────────────────────────────────────────────────
+numpy==2.1.3                  # Latest; cp312-cp312-manylinux wheel ✅ (ABI break from 1.x fixed)
+scikit-learn==1.5.2           # ML; cp312-cp312-manylinux wheel ✅
+networkx==3.4.2               # Graph algorithms; pure Python ✅
+
+# ── Vector Store ──────────────────────────────────────────────────────────────
+qdrant-client==1.12.1         # Pure Python REST/gRPC client ✅
+grpcio==1.68.1                # gRPC; cp312-cp312-manylinux wheel (required by qdrant) ✅
+
+# ── Graph DB ──────────────────────────────────────────────────────────────────
+neo4j==5.26.0                 # Official driver; pure Python ✅
+
+# ── Object Storage ────────────────────────────────────────────────────────────
+minio==7.2.11                 # MinIO client; pure Python ✅
+boto3==1.35.86                # AWS S3 SDK; pure Python ✅
+aiofiles==24.1.0              # Async file I/O; pure Python ✅
+
+# ── Document DB ───────────────────────────────────────────────────────────────
+motor==3.6.0                  # Async MongoDB driver; pure Python ✅
+pymongo==4.9.2                # MongoDB sync driver (motor dep); pure Python ✅
+
+# ── Networking ────────────────────────────────────────────────────────────────
+websockets==13.1              # WebSocket server/client; cp312 wheel ✅
+
+# ── Observability ─────────────────────────────────────────────────────────────
+prometheus-client==0.21.0     # Metrics; pure Python ✅
+opentelemetry-api==1.29.0     # OTel API; pure Python ✅
+opentelemetry-sdk==1.29.0     # OTel SDK; pure Python ✅
+opentelemetry-instrumentation-fastapi==0.50b0  # FastAPI instrumentation ✅
+
+# ── Testing (excluded from production build) ──────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+httpx==0.28.1                 # Already listed above; used for TestClient too

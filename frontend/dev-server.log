@@ -1,0 +1,38 @@
+
+> academia-ai@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.23
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.56.1:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 508ms (212 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 5.7s (2076 modules)
+Attention: Clerk collects telemetry data from its SDKs when connected to development instances.
+The data collected is used to inform Clerk's product roadmap.
+To learn more, including how to opt-out from the telemetry program, visit: https://clerk.com/docs/telemetry.
+
+ GET / 200 in 6888ms
+ ✓ Compiled in 1432ms (860 modules)
+ GET / 200 in 173ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 841ms (2067 modules)
+ GET /service-worker.js 500 in 1331ms
+ ○ Compiling /onboarding ...
+ ✓ Compiled /onboarding in 1031ms (2093 modules)
+ GET /onboarding 200 in 1184ms
+ GET /service-worker.js 500 in 264ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 808ms (2106 modules)
+ GET /dashboard 200 in 939ms
+ ○ Compiling /tutor ...
+ ✓ Compiled /tutor in 5.5s (2639 modules)
+ GET /tutor 200 in 5796ms
+ GET /tutor 200 in 47ms
+ GET /tutor 200 in 39ms
+ GET /tutor 200 in 37ms

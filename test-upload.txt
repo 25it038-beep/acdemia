@@ -1,0 +1,1 @@
+Binary trees are a fundamental data structure in computer science. Each node has at most two children.
