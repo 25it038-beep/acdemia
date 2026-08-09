@@ -108,6 +108,7 @@ class Unit(Base):
     subject_id = Column(Uuid(), ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    exploration = Column(Text, nullable=True)
     order = Column(Integer, default=0)
     created_at = Column(DateTime, default=utcnow)
 
@@ -325,6 +326,7 @@ class Quiz(Base):
     id = Column(Uuid(), primary_key=True, default=new_uuid)
     user_id = Column(Uuid(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     subject_id = Column(Uuid(), ForeignKey("subjects.id", ondelete="SET NULL"), nullable=True)
+    unit_id = Column(Uuid(), ForeignKey("units.id", ondelete="SET NULL"), nullable=True)
     topic_id = Column(Uuid(), ForeignKey("topics.id", ondelete="SET NULL"), nullable=True)
     title = Column(String(255), nullable=False)
     quiz_type = Column(String(50), default="mcq")

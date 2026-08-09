@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { playSuccessSound } from '@/lib/sound';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PenSquare, CheckCircle2, XCircle, AlertCircle, ArrowRight, Clock, BarChart3 } from 'lucide-react';
 
 export default function QuizzesPage() {
@@ -22,8 +22,22 @@ export default function QuizzesPage() {
   const [score, setScore] = useState(0);
   const [error, setError] = useState('');
   const questionStartRef = useRef(Date.now());
+  const searchParams = useSearchParams();
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    const quizId = searchParams.get('quiz_id');
+    if (quizId) {
+      api.getQuiz(quizId).then((quizData) => {
+        setActiveQuiz(quizData);
+        setCurrentQuestion(0);
+        setAnswers([]);
+        setSubmitted(false);
+        questionStartRef.current = Date.now();
+      }).catch(() => {});
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     try {

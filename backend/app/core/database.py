@@ -61,6 +61,14 @@ def _migrate_sqlite(sync_conn):
         existing = {row[1] for row in sync_conn.exec_driver_sql("PRAGMA table_info(quizzes)").fetchall()}
         if "subject_id" not in existing:
             sync_conn.exec_driver_sql("ALTER TABLE quizzes ADD COLUMN subject_id CHAR(32)")
+        if "unit_id" not in existing:
+            sync_conn.exec_driver_sql("ALTER TABLE quizzes ADD COLUMN unit_id CHAR(32)")
+    except Exception:
+        pass
+    try:
+        existing = {row[1] for row in sync_conn.exec_driver_sql("PRAGMA table_info(units)").fetchall()}
+        if "exploration" not in existing:
+            sync_conn.exec_driver_sql("ALTER TABLE units ADD COLUMN exploration TEXT")
     except Exception:
         pass
 

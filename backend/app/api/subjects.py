@@ -56,10 +56,9 @@ async def create_subject(
     await db.commit()
     await db.refresh(subject)
 
-    # Generate the workflow from course info (description/syllabus) in the background
-    if data.description or data.syllabus:
-        from app.services.file_service import file_processor
-        background_tasks.add_task(file_processor.organize_from_course, subject.id)
+    # Generate the workflow from course info in the background (no file needed)
+    from app.services.file_service import file_processor
+    background_tasks.add_task(file_processor.organize_from_course, subject.id)
 
     return SubjectResponse(
         id=subject.id,
@@ -72,6 +71,20 @@ async def create_subject(
         color=subject.color,
         created_at=subject.created_at,
     )
+
+
+@router.post("/{subject_id}/generate-workflow")
+async def generate_subject_workflow(
+    subject_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Manually trigger workflow generation for a course (AI builds units/chapters)."""
+    await _ensure_subject_access(db, subject_id, user)
+    from app.services.file_service import file_processor
+    background_tasks.add_task(file_processor.organize_from_course, subject_id)
+    return {"status": "started", "subject_id": str(subject_id)}
 
 
 @router.get("/", response_model=List[SubjectResponse])

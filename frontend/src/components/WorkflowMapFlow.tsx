@@ -73,6 +73,7 @@ interface WorkflowMapFlowProps {
   edges: Edge[];
   onNodesChange: any;
   onEdgesChange: any;
+  onNodeClick?: (event: any, node: Node) => void;
 }
 
 export default function WorkflowMapFlow({
@@ -80,6 +81,7 @@ export default function WorkflowMapFlow({
   edges,
   onNodesChange,
   onEdgesChange,
+  onNodeClick,
 }: WorkflowMapFlowProps) {
   return (
     <ReactFlow
@@ -88,6 +90,7 @@ export default function WorkflowMapFlow({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
+      onNodeClick={onNodeClick}
       fitView
       attributionPosition="bottom-left"
     >

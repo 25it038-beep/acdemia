@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.models.models import (
     KnowledgeRelation, Concept, Topic, LearningProgress,
     StudySession, StudyPlan, Memory, Flashcard, Whiteboard,
-    Unit, Chapter, Subject, to_uuid,
+    Unit, Chapter, Subject, Quiz, Question, to_uuid,
 )
 from app.schemas.schemas import (
     KnowledgeGraphResponse, WorkflowResponse, MemoryResponse,
@@ -68,21 +68,23 @@ async def get_workflow(
 
     nodes = []
     edges = []
+    total_chapters = 0
+    completed_chapters = 0
+    total_units = len(units)
+    completed_units = 0
+    next_workflow = None
 
-    for unit in units:
+    for ui, unit in enumerate(units):
         unit_node_id = f"unit_{unit.id}"
-        nodes.append({
-            "id": unit_node_id,
-            "type": "unit",
-            "label": unit.name,
-            "data": {"id": str(unit.id), "type": "unit"},
-        })
+        unit_status = "pending"
 
         chapters_result = await db.execute(
             select(Chapter).where(Chapter.unit_id == unit.id).order_by(Chapter.order)
         )
         chapters = chapters_result.scalars().all()
+        total_chapters += len(chapters)
 
+        unit_completed = 0
         for i, chapter in enumerate(chapters):
             chapter_node_id = f"chapter_{chapter.id}"
             progress = await db.scalar(
@@ -100,6 +102,8 @@ async def get_workflow(
                 status = "in_progress"
             else:
                 status = "completed"
+                unit_completed += 1
+                completed_chapters += 1
 
             nodes.append({
                 "id": chapter_node_id,
@@ -136,7 +140,198 @@ async def get_workflow(
                     "label": "next",
                 })
 
-    return {"nodes": nodes, "edges": edges}
+        if len(chapters) == 0:
+            unit_status = "pending"
+        elif unit_completed >= len(chapters):
+            unit_status = "completed"
+            completed_units += 1
+        elif ui > 0 and units[ui - 1].id and not _unit_is_completed(db, units[ui - 1], user.id):
+            unit_status = "locked"
+        else:
+            unit_status = "in_progress"
+
+        if unit_status != "completed" and not next_workflow:
+            next_workflow = {
+                "unit_id": str(unit.id),
+                "unit_name": unit.name,
+                "unit_status": unit_status,
+            }
+
+        nodes.append({
+            "id": unit_node_id,
+            "type": "unit",
+            "label": unit.name,
+            "data": {
+                "id": str(unit.id),
+                "type": "unit",
+                "status": unit_status,
+                "completed_chapters": unit_completed,
+                "total_chapters": len(chapters),
+            },
+        })
+
+        # link units sequentially
+        if ui > 0:
+            prev_unit_node_id = f"unit_{units[ui - 1].id}"
+            edges.append({
+                "source": prev_unit_node_id,
+                "target": unit_node_id,
+                "label": "next workflow",
+            })
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "workflow_progress": {
+            "completed_units": completed_units,
+            "total_units": total_units,
+            "completed_chapters": completed_chapters,
+            "total_chapters": total_chapters,
+        },
+        "next_workflow": next_workflow,
+    }
+
+
+async def _unit_is_completed(db: AsyncSession, unit: Unit, user_id: uuid.UUID) -> bool:
+    """A unit is complete when all of its chapters reach >= 0.8 confidence."""
+    chapters = (await db.execute(
+        select(Chapter).where(Chapter.unit_id == unit.id)
+    )).scalars().all()
+    if not chapters:
+        return False
+    for chapter in chapters:
+        progress = await db.scalar(
+            select(func.avg(LearningProgress.confidence)).where(
+                LearningProgress.chapter_id == chapter.id,
+                LearningProgress.user_id == user_id,
+            )
+        )
+        if not progress or progress < 0.8:
+            return False
+    return True
+
+
+# --- Unit Deep Exploration & Assessment ---
+@router.post("/units/{unit_id}/explore")
+async def explore_unit(
+    unit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Deep-exploration module for a workflow (unit). Cached in unit.exploration."""
+    from app.services.ai_service import ai_provider
+
+    unit_result = await db.execute(
+        select(Unit, Subject.name)
+        .join(Subject, Unit.subject_id == Subject.id)
+        .where(Unit.id == unit_id, Subject.user_id == user.id)
+    )
+    row = unit_result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    unit, course_name = row[0], row[1]
+
+    if unit.exploration:
+        return {"unit_id": str(unit.id), "content": unit.exploration, "cached": True}
+
+    chapters = (await db.execute(
+        select(Chapter).where(Chapter.unit_id == unit.id).order_by(Chapter.order)
+    )).scalars().all()
+    topics = (await db.execute(
+        select(Topic).join(Chapter).where(Chapter.unit_id == unit.id).order_by(Chapter.order)
+    )).scalars().all()
+
+    outline = "\n".join(
+        f"- {ch.name}: " + ", ".join(t.name for t in topics if t.chapter_id == ch.id)
+        for ch in chapters
+    ) or "(no chapters yet)"
+    prompt = (
+        "You are a subject-matter expert. Write a deep exploration module for the "
+        "unit '{{UNIT}}' of the course '{{COURSE}}'. Cover: core concepts, how ideas "
+        "connect, worked examples, common mistakes, and study tips. Output rich markdown "
+        "with sections. Base everything on this outline:\n{{OUTLINE}}"
+    ).replace("{{UNIT}}", unit.name).replace("{{COURSE}}", course_name).replace("{{OUTLINE}}", outline)
+
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": f"Unit description: {unit.description or 'none'}"},
+    ]
+    content = ""
+    for _ in range(2):
+        content = ""
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=2048):
+            data = json.loads(chunk)
+            content += data.get("content", "")
+        if content.strip():
+            break
+
+    if not content.strip():
+        raise HTTPException(status_code=502, detail="AI unavailable — try again shortly (rate limit?)")
+
+    unit.exploration = content
+    await db.commit()
+    return {"unit_id": str(unit.id), "content": content, "cached": False}
+
+
+@router.post("/units/{unit_id}/assessment")
+async def generate_unit_assessment(
+    unit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Generate an assessment (quiz) for a workflow (unit)."""
+    from app.services.ai_service import ai_provider
+
+    unit = await db.scalar(
+        select(Unit)
+        .join(Subject, Unit.subject_id == Subject.id)
+        .where(Unit.id == unit_id, Subject.user_id == user.id)
+    )
+    if not unit:
+        raise HTTPException(status_code=404, detail="Unit not found")
+
+    topics = (await db.execute(
+        select(Topic).join(Chapter).where(Chapter.unit_id == unit.id).order_by(Chapter.order)
+    )).scalars().all()
+    content = "\n".join(f"{t.name}: {t.content or ''}" for t in topics) or unit.name
+
+    questions = await ai_provider.generate_questions(
+        content=content[:6000], question_type="mcq", count=5, difficulty="medium"
+    )
+    if not questions:
+        raise HTTPException(status_code=502, detail="AI unavailable — try again shortly (rate limit?)")
+
+    quiz = Quiz(
+        user_id=user.id,
+        subject_id=unit.subject_id,
+        unit_id=unit.id,
+        title=f"{unit.name} — Assessment",
+        quiz_type="mcq",
+        difficulty="medium",
+        total_questions=len(questions),
+    )
+    db.add(quiz)
+    await db.commit()
+    await db.refresh(quiz)
+
+    for q in questions:
+        db.add(Question(
+            quiz_id=quiz.id,
+            question_text=q.get("question_text", ""),
+            question_type=q.get("question_type", "mcq"),
+            options=q.get("options"),
+            correct_answer=str(q.get("correct_answer", "")),
+            explanation=q.get("explanation", ""),
+            difficulty=q.get("difficulty", 1),
+            marks=q.get("marks", 1),
+        ))
+    await db.commit()
+
+    return {
+        "quiz_id": str(quiz.id),
+        "title": quiz.title,
+        "total_questions": len(questions),
+    }
 
 
 # --- Study Plans ---

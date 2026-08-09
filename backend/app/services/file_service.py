@@ -482,7 +482,7 @@ class FileProcessor:
         )
 
     async def organize_from_course(self, subject_id: uuid.UUID) -> None:
-        """Generate a workflow from course info alone (e.g. on course creation)."""
+        """Generate a workflow from course info alone (on creation or manual trigger)."""
         from app.core.database import async_session_factory
 
         async with async_session_factory() as db:
@@ -495,11 +495,14 @@ class FileProcessor:
             if existing_units:
                 return
             context = self._build_course_context(subject)
-            if not context:
-                logger.info(f"Subject {subject.id} has no description/syllabus, skipping")
-                return
+            user_content = (
+                f"Course information:\n{context}\n\n"
+                f"Course name: {subject.name}"
+                if context else
+                f"Build the workflow for the course: {subject.name}"
+            )
             await self._generate_for_subject(
-                db, subject, f"Course information:\n{context}", "course info"
+                db, subject, user_content, "course info"
             )
 
     async def _update_status(self, db: AsyncSession, file_id: uuid.UUID, status: str):

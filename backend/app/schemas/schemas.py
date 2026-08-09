@@ -338,6 +338,8 @@ class KnowledgeGraphResponse(BaseModel):
 class WorkflowResponse(BaseModel):
     nodes: list
     edges: list
+    workflow_progress: Optional[dict] = None
+    next_workflow: Optional[dict] = None
 
 
 class ProjectCreate(BaseModel):

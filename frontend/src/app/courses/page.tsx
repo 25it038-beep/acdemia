@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Subject } from '@/types';
 import { motion } from 'framer-motion';
-import { BookOpen, Plus, Search, Upload, MoreVertical, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, Search, Upload, MoreVertical, Trash2, Map, Sparkles } from 'lucide-react';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -42,6 +42,21 @@ export default function CoursesPage() {
   const deleteSubject = async (id: string) => {
     await api.deleteSubject(id);
     loadSubjects();
+  };
+
+  const [generating, setGenerating] = useState<Record<string, boolean>>({});
+
+  const generateWorkflow = async (e: any, id: string) => {
+    e.stopPropagation();
+    setGenerating((g) => ({ ...g, [id]: true }));
+    try {
+      await api.generateSubjectWorkflow(id);
+    } catch {
+      // ignore
+    } finally {
+      setGenerating((g) => ({ ...g, [id]: false }));
+      loadSubjects();
+    }
   };
 
   const filteredSubjects = subjects.filter(s =>
@@ -192,6 +207,28 @@ export default function CoursesPage() {
                     {Math.round(subject.progress * 100)}%
                   </span>
                 </div>
+                {subject.unit_count === 0 && (
+                  <button
+                    onClick={(e) => generateWorkflow(e, subject.id)}
+                    disabled={generating[subject.id]}
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {generating[subject.id] ? 'Generating workflow...' : 'Generate Workflow'}
+                  </button>
+                )}
+                {subject.unit_count > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/workflow?subject=${subject.id}`);
+                    }}
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium transition-colors"
+                  >
+                    <Map className="w-3.5 h-3.5" />
+                    View Workflow
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}

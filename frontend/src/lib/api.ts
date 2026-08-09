@@ -165,6 +165,25 @@ class ApiClient {
     return res.data;
   }
 
+  async exploreUnit(unitId: string) {
+    const res = await this.client.post(`/api/units/${unitId}/explore`, {}, {
+      timeout: 300000,
+    });
+    return res.data;
+  }
+
+  async createUnitAssessment(unitId: string) {
+    const res = await this.client.post(`/api/units/${unitId}/assessment`, {}, {
+      timeout: 300000,
+    });
+    return res.data;
+  }
+
+  async generateSubjectWorkflow(subjectId: string) {
+    const res = await this.client.post(`/api/subjects/${subjectId}/generate-workflow`, {});
+    return res.data;
+  }
+
   // Memories
   async getMemories() {
     const res = await this.client.get('/api/memories');
