@@ -1,12 +1,55 @@
 import json
 import logging
 import re
+import time
 from typing import Optional, List, Dict, Any, AsyncGenerator
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+# Default per-task models for backup providers (used when the primary fails)
+FALLBACK_MODELS: Dict[str, Dict[str, str]] = {
+    "cloudflare": {
+        "chat": "@cf/qwen/qwen2.5-7b-instruct",
+        "stem": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "coding": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "vision": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "embed": "@cf/baai/bge-large-en-v1.5",
+    },
+    "nvidia": {
+        "chat": "meta/llama-3.3-70b-instruct",
+        "stem": "deepseek-ai/deepseek-r1",
+        "coding": "meta/llama-3.3-70b-instruct",
+        "vision": "meta/llama-3.3-70b-instruct",
+        "embed": "nvidia/embed-qa-4",
+    },
+    "openrouter": {
+        "chat": "meta-llama/llama-3.3-70b-instruct:free",
+        "stem": "meta-llama/llama-3.3-70b-instruct:free",
+        "coding": "qwen/qwen-2.5-coder-32b-instruct:free",
+        "vision": "meta-llama/llama-3.3-70b-instruct:free",
+    },
+    "openai": {
+        "chat": "gpt-4o-mini",
+        "stem": "gpt-4o-mini",
+        "coding": "gpt-4o-mini",
+        "vision": "gpt-4o-mini",
+    },
+    "gemini": {
+        "chat": "gemini-2.0-flash",
+        "stem": "gemini-2.0-flash",
+        "coding": "gemini-2.0-flash",
+        "vision": "gemini-2.0-flash",
+    },
+}
+
+# Fallback order after the configured primary provider
+FALLBACK_ORDER = ["groq", "nvidia", "openrouter", "openai", "cloudflare", "gemini"]
+
+# Cooldown (seconds) before retrying a provider that failed
+PROVIDER_COOLDOWN = 300
 
 
 def _strip_think(text: str) -> str:
@@ -51,19 +94,21 @@ def _normalize_content(content) -> str:
 
 
 class AIProvider:
-    """Unified AI provider with per-task model selection on NVIDIA NIM."""
+    """Unified AI provider with automatic fallback across configured providers.
+
+    The provider named by ``AI_PROVIDER`` is tried first; if it errors (quota,
+    outage, ...), the request is retried with the next configured provider.
+    """
 
     def __init__(self):
         self.provider = settings.AI_PROVIDER
-        self.base_url = settings.NVIDIA_BASE_URL
 
-        # Per-task clients
-        self._chat_client = None
-        self._coding_client = None
-        self._vision_client = None
-        self._embed_client = None
+        # Ordered list of usable providers: {name, client, models}
+        self._providers: List[Dict[str, Any]] = []
+        # Provider name -> timestamp until which it is skipped after a failure
+        self._dead_providers: Dict[str, float] = {}
 
-        self._init_clients()
+        self._init_providers()
 
     def _cloudflare_base_url(self) -> Optional[str]:
         """OpenAI-compatible base URL for Cloudflare Workers AI."""
@@ -74,74 +119,136 @@ class AIProvider:
             or f"https://api.cloudflare.com/client/v4/accounts/{settings.CLOUDFLARE_ACCOUNT_ID}/ai/v1"
         )
 
-    def _init_clients(self):
-        if self.provider == "groq":
+    def _provider_config(self, name: str) -> Optional[Dict[str, Any]]:
+        """Build the client + model table for one provider, or None if unconfigured."""
+        if name == "groq":
+            if not settings.GROQ_API_KEY:
+                return None
             client = _make_client(settings.GROQ_API_KEY, settings.GROQ_BASE_URL)
-            self._chat_client = client
-            self._coding_client = client
-            self._vision_client = client
-            self._embed_client = client
-            if client is None:
-                logger.warning("Groq provider selected but GROQ_API_KEY missing.")
-        elif self.provider == "cloudflare":
+            models = {
+                "chat": settings.CHAT_MODEL,
+                "stem": settings.STEM_MODEL,
+                "coding": settings.CODING_MODEL,
+                "vision": settings.VISION_MODEL,
+                "embed": settings.EMBEDDING_MODEL,
+            }
+        elif name == "cloudflare":
             cf_base = self._cloudflare_base_url()
-            client = _make_client(settings.CLOUDFLARE_API_KEY, cf_base) if cf_base else None
-            self._chat_client = client
-            self._coding_client = client
-            self._vision_client = client
-            self._embed_client = client
-            if client is None:
-                logger.warning("Cloudflare provider selected but API key or account ID missing.")
-        elif self.provider == "nvidia":
-            self._chat_client = _make_client(settings.NVIDIA_API_KEY, self.base_url)
-            self._coding_client = _make_client(
-                settings.NVIDIA_CODING_API_KEY or settings.NVIDIA_API_KEY,
-                self.base_url,
+            if not settings.CLOUDFLARE_API_KEY or not cf_base:
+                return None
+            client = _make_client(settings.CLOUDFLARE_API_KEY, cf_base)
+            models = dict(FALLBACK_MODELS["cloudflare"])
+        elif name == "nvidia":
+            if not (settings.NVIDIA_API_KEY or settings.NVIDIA_CODING_API_KEY
+                    or settings.NVIDIA_VISION_API_KEY):
+                return None
+            client = _make_client(
+                settings.NVIDIA_API_KEY
+                or settings.NVIDIA_CODING_API_KEY
+                or settings.NVIDIA_VISION_API_KEY,
+                settings.NVIDIA_BASE_URL,
             )
-            self._vision_client = _make_client(
-                settings.NVIDIA_VISION_API_KEY or settings.NVIDIA_API_KEY,
-                self.base_url,
-            )
-            self._embed_client = _make_client(
-                settings.NVIDIA_EMBED_API_KEY or settings.NVIDIA_API_KEY,
-                self.base_url,
-            )
-        elif self.provider == "openrouter" and settings.OPENROUTER_API_KEY:
+            models = dict(FALLBACK_MODELS["nvidia"])
+        elif name == "openrouter":
+            if not settings.OPENROUTER_API_KEY:
+                return None
             client = _make_client(settings.OPENROUTER_API_KEY, "https://openrouter.ai/api/v1")
-            self._chat_client = client
-            self._coding_client = client
-            self._vision_client = client
-            self._embed_client = client
-        elif self.provider == "openai" and settings.OPENAI_API_KEY:
+            models = dict(FALLBACK_MODELS["openrouter"])
+        elif name == "openai":
+            if not settings.OPENAI_API_KEY:
+                return None
             client = _make_client(settings.OPENAI_API_KEY)
-            self._chat_client = client
-            self._coding_client = client
-            self._vision_client = client
-            self._embed_client = client
-        elif self.provider == "gemini" and settings.GEMINI_API_KEY:
+            models = dict(FALLBACK_MODELS["openai"])
+        elif name == "gemini":
+            if not settings.GEMINI_API_KEY:
+                return None
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            self._gemini_configured = True
+            client = None  # handled via genai SDK
+            models = dict(FALLBACK_MODELS["gemini"])
         else:
-            logger.warning("No AI API keys configured. Using mock responses.")
+            return None
+        return {"name": name, "client": client, "models": models}
+
+    def _init_providers(self):
+        providers = []
+        for name in [settings.AI_PROVIDER, *FALLBACK_ORDER]:
+            if name not in providers:
+                cfg = self._provider_config(name)
+                if cfg:
+                    providers.append(cfg)
+        self._providers = providers
+        if not providers:
+            logger.warning("No AI API keys configured. AI features will be unavailable.")
+
+    def _live_providers(self) -> List[Dict[str, Any]]:
+        now = time.time()
+        return [
+            p for p in self._providers
+            if p["name"] not in self._dead_providers or self._dead_providers[p["name"]] <= now
+        ]
+
+    def _mark_dead(self, name: str):
+        logger.error(f"AI provider '{name}' failed — cooling down for {PROVIDER_COOLDOWN}s")
+        self._dead_providers[name] = time.time() + PROVIDER_COOLDOWN
 
     def _get_client(self, task: str = "chat"):
-        mapping = {
-            "chat": self._chat_client,
-            "coding": self._coding_client,
-            "vision": self._vision_client,
-            "embed": self._embed_client,
-        }
-        return mapping.get(task, self._chat_client)
+        for provider in self._providers:
+            if provider["name"] == settings.AI_PROVIDER:
+                return provider["client"]
+        return self._providers[0]["client"] if self._providers else None
 
     def _get_model(self, task: str = "chat"):
-        mapping = {
-            "chat": settings.CHAT_MODEL,
-            "stem": settings.STEM_MODEL,
-            "coding": settings.CODING_MODEL,
-            "vision": settings.VISION_MODEL,
-        }
-        return mapping.get(task, settings.CHAT_MODEL)
+        for provider in self._providers:
+            if provider["name"] == settings.AI_PROVIDER:
+                return provider["models"].get(task) or provider["models"]["chat"]
+        if not self._providers:
+            return settings.CHAT_MODEL
+        return self._providers[0]["models"].get(task) or self._providers[0]["models"]["chat"]
+
+    async def _chat_provider(
+        self,
+        provider: Dict[str, Any],
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        stream: bool,
+        task: str,
+    ) -> AsyncGenerator[str, None]:
+        client = provider["client"]
+        model = provider["models"].get(task) or provider["models"]["chat"]
+
+        if provider["name"] == "gemini":
+            import google.generativeai as genai
+            genai_model = genai.GenerativeModel(model)
+            chat_session = genai_model.start_chat()
+            response = await chat_session.send_message_async(messages[-1]["content"])
+            yield json.dumps({
+                "role": "assistant",
+                "content": _strip_think(_normalize_content(response.text)),
+            })
+            return
+
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=stream,
+        )
+        if stream:
+            async for chunk in response:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield json.dumps({
+                        "role": "assistant",
+                        "content": _strip_think(_normalize_content(content)),
+                    })
+        else:
+            yield json.dumps({
+                "role": "assistant",
+                "content": _strip_think(_normalize_content(response.choices[0].message.content)),
+            })
 
     async def chat(
         self,
@@ -151,73 +258,60 @@ class AIProvider:
         stream: bool = False,
         task: str = "chat",
     ) -> AsyncGenerator[str, None]:
-        client = self._get_client(task)
-        model = self._get_model(task)
-
-        if client is None:
+        providers = self._live_providers()
+        if not providers:
             yield json.dumps({
                 "role": "assistant",
                 "content": "I'm running in offline mode. Please configure an AI provider API key to enable AI features."
             })
             return
 
-        try:
-            if self.provider == "gemini":
-                import google.generativeai as genai
-                genai_model = genai.GenerativeModel(model)
-                chat_session = genai_model.start_chat()
-                response = await chat_session.send_message_async(messages[-1]["content"])
-                yield json.dumps({"role": "assistant", "content": response.text})
-            else:
-                response = await client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    stream=stream,
-                )
-                if stream:
-                    async for chunk in response:
-                        content = chunk.choices[0].delta.content
-                        if content:
-                            yield json.dumps({
-                                "role": "assistant",
-                                "content": _strip_think(_normalize_content(content)),
-                            })
-                else:
-                    yield json.dumps({
-                        "role": "assistant",
-                        "content": _strip_think(_normalize_content(response.choices[0].message.content)),
-                    })
-        except Exception as e:
-            logger.error(f"AI chat error ({model}): {e}")
-            yield json.dumps({
-                "role": "assistant",
-                "content": f"I encountered an error: {str(e)}. Please check your API configuration."
-            })
+        errors = []
+        for provider in providers:
+            try:
+                async for chunk in self._chat_provider(
+                    provider, messages, temperature, max_tokens, stream, task
+                ):
+                    yield chunk
+                return  # stream finished without error
+            except Exception as e:
+                errors.append(f"{provider['name']}: {e}")
+                logger.error(f"AI chat error ({provider['name']} / "
+                             f"{provider['models'].get(task, 'chat')}): {e}")
+                self._mark_dead(provider["name"])
+
+        yield json.dumps({
+            "role": "assistant",
+            "content": f"All AI providers failed: {'; '.join(errors)}"
+        })
 
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
-        client = self._get_client("embed")
         dim = settings.EMBEDDING_DIMENSION
-        if client is None or getattr(self, "_embeddings_failed", False):
+        if getattr(self, "_embeddings_failed", False):
             return [[0.0] * dim for _ in texts]
-        try:
-            import asyncio as _asyncio
-            batches = [texts[i:i + 128] for i in range(0, len(texts), 128)]
-            results = await _asyncio.gather(*[
-                client.embeddings.create(model=settings.EMBEDDING_MODEL, input=batch)
-                for batch in batches
-            ])
-            vectors = []
-            for res in results:
-                vectors.extend(item.embedding for item in res.data)
-            return vectors
-        except Exception as e:
-            # One failure means the provider has no embeddings support — stop
-            # hammering it and short-circuit all future calls.
-            logger.error(f"Embedding error ({settings.EMBEDDING_MODEL}): {e}")
-            self._embeddings_failed = True
-            return [[0.0] * dim for _ in texts]
+        import asyncio as _asyncio
+
+        for provider in self._live_providers():
+            embed_model = provider["models"].get("embed")
+            client = provider["client"]
+            if not embed_model or client is None:
+                continue
+            try:
+                batches = [texts[i:i + 128] for i in range(0, len(texts), 128)]
+                results = await _asyncio.gather(*[
+                    client.embeddings.create(model=embed_model, input=batch)
+                    for batch in batches
+                ])
+                vectors = []
+                for res in results:
+                    vectors.extend(item.embedding for item in res.data)
+                return vectors
+            except Exception as e:
+                logger.error(f"Embedding error ({provider['name']} / {embed_model}): {e}")
+                self._mark_dead(provider["name"])
+        # Every configured provider failed — short-circuit all future calls
+        self._embeddings_failed = True
+        return [[0.0] * dim for _ in texts]
 
     async def extract_text_from_file(self, file_path: str, file_type: str) -> str:
         text = ""
