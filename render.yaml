@@ -21,6 +21,18 @@ services:
         sync: false
 
       # ── AI Keys (set in Render dashboard)
+      - key: AI_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CHAT_MODEL
+        value: qwen/qwen3.6-27b
+      - key: STEM_MODEL
+        value: qwen/qwen3.6-27b
+      - key: CODING_MODEL
+        value: openai/gpt-oss-120b
+      - key: VISION_MODEL
+        value: groq/compound
       - key: NVIDIA_API_KEY
         sync: false
       - key: OPENAI_API_KEY
