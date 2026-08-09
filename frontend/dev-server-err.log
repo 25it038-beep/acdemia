@@ -46,3 +46,23 @@ For more details, see https://clerk.com/err/auth-middleware
 ] {
   digest: '957502113'
 }
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+node:internal/modules/package_json_reader:193
+  const result = modulesBinding.getPackageScopeConfig(`${resolved}`);
+                                ^
+
+Error: Invalid package config C:\Users\BS.Harshan seliyan\OneDrive\Pictures\acdemia-main\acdemia-main\frontend\package.json.
+    at getPackageScopeConfig (node:internal/modules/package_json_reader:193:33)
+    at Object.getFileProtocolModuleFormat [as file:] (node:internal/modules/esm/get_format:169:72)
+    at defaultGetFormatWithoutErrors (node:internal/modules/esm/get_format:249:36)
+    at defaultResolve (node:internal/modules/esm/resolve:1012:13)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at node:internal/modules/esm/loader:628:32 {
+  code: 'ERR_INVALID_PACKAGE_CONFIG'
+}
+
+Node.js v24.15.0
