@@ -58,10 +58,10 @@ class Settings(BaseSettings):
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
     # Per-task models (Groq)
-    CHAT_MODEL: str = "qwen/qwen3.6-27b"
-    STEM_MODEL: str = "qwen/qwen3.6-27b"
+    CHAT_MODEL: str = "llama-3.3-70b-versatile"
+    STEM_MODEL: str = "llama-3.3-70b-versatile"
     CODING_MODEL: str = "openai/gpt-oss-120b"
-    VISION_MODEL: str = "groq/compound"
+    VISION_MODEL: str = "llama-3.3-70b-versatile"
     EMBEDDING_MODEL: str = "@cf/baai/bge-large-en-v1.5"
     RERANK_MODEL: str = "@cf/baai/bge-large-en-v1.5"
 

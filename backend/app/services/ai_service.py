@@ -12,11 +12,11 @@ THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 # Default per-task models for backup providers (used when the primary fails)
 FALLBACK_MODELS: Dict[str, Dict[str, str]] = {
     "cloudflare": {
-        "chat": "@cf/qwen/qwen2.5-7b-instruct",
-        "stem": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-        "coding": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-        "vision": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-        "embed": "@cf/baai/bge-large-en-v1.5",
+        "chat": "@cf/qwen/qwen3-30b-a3b-fp8",
+        "stem": "@cf/qwen/qwen3-30b-a3b-fp8",
+        "coding": "@cf/qwen/qwen2.5-coder-32b-instruct",
+        "vision": "@cf/meta/llama-3.2-11b-vision-instruct",
+        "embed": "@cf/qwen/qwen3-embedding-0.6b",
     },
     "nvidia": {
         "chat": "meta/llama-3.3-70b-instruct",
@@ -58,9 +58,14 @@ def _strip_think(text: str) -> str:
         return text
     stripped = THINK_BLOCK_RE.sub("", text).strip()
     if "<think" in stripped:
-        # Block was truncated (no closing tag) — the final answer is lost anyway
-        return ""
+        # Block was truncated (no closing tag) — keep whatever follows the opening tag
+        idx = stripped.find("<think")
+        return stripped[idx + len("<think"):].strip()
     return stripped
+
+
+class EmptyResponseError(Exception):
+    """Raised when a provider returns success but no usable content."""
 
 
 def _make_client(api_key: Optional[str], base_url: str = None):
@@ -172,11 +177,14 @@ class AIProvider:
 
     def _init_providers(self):
         providers = []
+        seen = set()
         for name in [settings.AI_PROVIDER, *FALLBACK_ORDER]:
-            if name not in providers:
-                cfg = self._provider_config(name)
-                if cfg:
-                    providers.append(cfg)
+            if name in seen:
+                continue
+            seen.add(name)
+            cfg = self._provider_config(name)
+            if cfg:
+                providers.append(cfg)
         self._providers = providers
         if not providers:
             logger.warning("No AI API keys configured. AI features will be unavailable.")
@@ -237,18 +245,26 @@ class AIProvider:
             stream=stream,
         )
         if stream:
+            saw_content = False
             async for chunk in response:
                 content = chunk.choices[0].delta.content
                 if content:
+                    saw_content = True
                     yield json.dumps({
                         "role": "assistant",
                         "content": _strip_think(_normalize_content(content)),
                     })
+            if not saw_content:
+                raise EmptyResponseError(
+                    f"stream ended without content (model {model})"
+                )
         else:
-            yield json.dumps({
-                "role": "assistant",
-                "content": _strip_think(_normalize_content(response.choices[0].message.content)),
-            })
+            content = _strip_think(_normalize_content(response.choices[0].message.content))
+            if not content:
+                raise EmptyResponseError(
+                    f"empty response (model {model}, finish_reason={response.choices[0].finish_reason})"
+                )
+            yield json.dumps({"role": "assistant", "content": content})
 
     async def chat(
         self,
