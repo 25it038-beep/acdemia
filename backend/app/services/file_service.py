@@ -16,6 +16,24 @@ logger = logging.getLogger(__name__)
 class FileProcessor:
     """Handles the complete file processing pipeline."""
 
+    _qdrant_probed = False
+    _qdrant_ok = False
+
+    async def _qdrant_available(self) -> bool:
+        """Probe Qdrant once per process and cache the result."""
+        if self._qdrant_probed:
+            return self._qdrant_ok
+        self._qdrant_probed = True
+        try:
+            from app.services.vector_service import vector_store
+            if vector_store.client is None:
+                return False
+            await vector_store.ensure_collection()
+            self._qdrant_ok = True
+        except Exception as e:
+            logger.warning(f"Qdrant unavailable, vector search disabled: {e}")
+        return self._qdrant_ok
+
     async def process_file(
         self, file_id: uuid.UUID, file_path: str, file_type: str
     ) -> None:
@@ -39,49 +57,47 @@ class FileProcessor:
                 await db.execute(stmt)
                 await db.commit()
 
-                # Step 3: Chunk the text
+                # Step 3: Build the course workflow from the content (fast path —
+                # users see units/chapters right away)
+                await self._auto_organize(db, file_id, extracted_text)
+
+                # Step 4: Chunk the text (kept cheap; counts are shown in the UI)
                 chunks = self._chunk_text(extracted_text, file_type)
                 logger.info(f"Created {len(chunks)} chunks for file {file_id}")
 
-                # Step 4: Generate embeddings and store chunks
-                embedded_chunks = []
-                chunk_texts = [c["content"] for c in chunks]
-                embeddings = await ai_provider.generate_embeddings(chunk_texts)
+                # Step 5: Embeddings + Qdrant — only when Qdrant is actually up
+                qdrant_ok = await self._qdrant_available()
+                if qdrant_ok:
+                    try:
+                        from app.services.vector_service import vector_store
+                        chunk_texts = [c["content"] for c in chunks]
+                        embeddings = await ai_provider.generate_embeddings(chunk_texts)
+                        for i, (chunk_data, embedding) in enumerate(zip(chunks, embeddings)):
+                            chunk = Chunk(
+                                file_id=file_id,
+                                content=chunk_data["content"],
+                                chunk_index=i,
+                                chunk_type=chunk_data.get("type", "text"),
+                                extra_metadata=chunk_data.get("metadata", {}),
+                            )
+                            db.add(chunk)
+                            await db.flush()
+                            await vector_store.upsert(
+                                collection_name="academia",
+                                point_id=str(chunk.id),
+                                vector=embedding,
+                                payload={
+                                    "file_id": str(file_id),
+                                    "content": chunk.content[:500],
+                                    "chunk_index": chunk.chunk_index,
+                                },
+                            )
+                        await db.commit()
+                    except Exception as qe:
+                        logger.warning(f"Vector storage skipped: {qe}")
+                        await db.rollback()
 
-                for i, (chunk_data, embedding) in enumerate(zip(chunks, embeddings)):
-                    chunk = Chunk(
-                        file_id=file_id,
-                        content=chunk_data["content"],
-                        chunk_index=i,
-                        chunk_type=chunk_data.get("type", "text"),
-                        extra_metadata=chunk_data.get("metadata", {}),
-                    )
-                    db.add(chunk)
-                    embedded_chunks.append((chunk, embedding))
-
-                await db.commit()
-
-                # Step 5: Store embeddings in Qdrant (skip if unavailable)
-                try:
-                    from app.services.vector_service import vector_store
-                    for chunk, embedding in embedded_chunks:
-                        await vector_store.upsert(
-                            collection_name="academia",
-                            point_id=str(chunk.id),
-                            vector=embedding,
-                            payload={
-                                "file_id": str(file_id),
-                                "content": chunk.content[:500],
-                                "chunk_index": chunk.chunk_index,
-                            },
-                        )
-                except Exception as qe:
-                    logger.warning(f"Qdrant unavailable, skipping vector storage: {qe}")
-
-                # Step 6: Auto-detect subject and organize
-                await self._auto_organize(db, file_id, extracted_text)
-
-                # Step 7: Mark as completed
+                # Step 6: Mark as completed
                 stmt = (
                     update(File)
                     .where(File.id == file_id)
@@ -361,7 +377,7 @@ class FileProcessor:
         ).replace("{{COURSE_NAME}}", subject.name)
         messages = [
             {"role": "system", "content": prompt},
-            {"role": "user", "content": text[:8000]},
+            {"role": "user", "content": text[:5000]},
         ]
 
         result_text = ""

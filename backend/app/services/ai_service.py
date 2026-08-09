@@ -198,17 +198,26 @@ class AIProvider:
 
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         client = self._get_client("embed")
-        if client is None:
-            return [[0.0] * settings.EMBEDDING_DIMENSION for _ in texts]
+        dim = settings.EMBEDDING_DIMENSION
+        if client is None or getattr(self, "_embeddings_failed", False):
+            return [[0.0] * dim for _ in texts]
         try:
-            response = await client.embeddings.create(
-                model=settings.EMBEDDING_MODEL,
-                input=texts,
-            )
-            return [item.embedding for item in response.data]
+            import asyncio as _asyncio
+            batches = [texts[i:i + 128] for i in range(0, len(texts), 128)]
+            results = await _asyncio.gather(*[
+                client.embeddings.create(model=settings.EMBEDDING_MODEL, input=batch)
+                for batch in batches
+            ])
+            vectors = []
+            for res in results:
+                vectors.extend(item.embedding for item in res.data)
+            return vectors
         except Exception as e:
-            logger.error(f"Embedding error: {e}")
-            return [[0.0] * settings.EMBEDDING_DIMENSION for _ in texts]
+            # One failure means the provider has no embeddings support — stop
+            # hammering it and short-circuit all future calls.
+            logger.error(f"Embedding error ({settings.EMBEDDING_MODEL}): {e}")
+            self._embeddings_failed = True
+            return [[0.0] * dim for _ in texts]
 
     async def extract_text_from_file(self, file_path: str, file_type: str) -> str:
         text = ""
