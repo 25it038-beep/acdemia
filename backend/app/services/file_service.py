@@ -5,7 +5,7 @@ import asyncio
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import File, Chunk, Subject, Unit, Chapter, Topic, Concept
@@ -291,6 +291,113 @@ class FileProcessor:
             except Exception as e:
                 logger.warning(f"Auto-organization failed: {e}")
                 await db.rollback()
+        else:
+            await self._organize_existing_subject(db, file, text)
+
+    async def _organize_existing_subject(
+        self, db: AsyncSession, file: File, text: str
+    ) -> None:
+        """Generate units/chapters/topics for a course the file was uploaded into."""
+        from app.services.ai_service import ai_provider
+        import json as j
+
+        result = await db.execute(select(Subject).where(Subject.id == file.subject_id))
+        subject = result.scalar_one_or_none()
+        if not subject:
+            return
+
+        existing_units = await db.scalar(
+            select(func.count(Unit.id)).where(Unit.subject_id == subject.id)
+        )
+        if existing_units:
+            logger.info(f"Subject {subject.id} already has units, skipping generation")
+            return
+
+        prompt = (
+            "Analyze the following educational content for the course '{{COURSE_NAME}}' "
+            "and respond with valid JSON only, exactly this shape (NO markdown fences):\n"
+            "{\n"
+            '  "units": [\n'
+            '    {\n'
+            '      "name": "Unit name",\n'
+            '      "description": "Short description",\n'
+            '      "chapters": [\n'
+            '        {\n'
+            '          "name": "Chapter name",\n'
+            '          "estimated_hours": 2.0,\n'
+            '          "difficulty": 2,\n'
+            '          "topics": [\n'
+            '            {\n'
+            '              "name": "Topic name",\n'
+            '              "content": "Brief summary of this topic"\n'
+            '            }\n'
+            '          ]\n'
+            '        }\n'
+            '      ]\n'
+            '    }\n'
+            '  ]\n'
+            "}\n"
+            "Split the material into logical units (modules) and chapters (lessons) "
+            "with 2-6 topics each. Estimated hours 1-4, difficulty 1-5."
+        ).replace("{{COURSE_NAME}}", subject.name)
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": text[:8000]},
+        ]
+
+        result_text = ""
+        async for chunk in ai_provider.chat(messages, temperature=0.3):
+            data = j.loads(chunk)
+            result_text += data.get("content", "")
+
+        try:
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0].strip()
+
+            info = j.loads(result_text)
+
+            for unit_data in info.get("units", []):
+                unit = Unit(
+                    subject_id=subject.id,
+                    name=unit_data.get("name", "Unit"),
+                    description=unit_data.get("description"),
+                    order=info.get("units", []).index(unit_data),
+                )
+                db.add(unit)
+                await db.flush()
+
+                for ch_data in unit_data.get("chapters", []):
+                    chapter = Chapter(
+                        unit_id=unit.id,
+                        name=ch_data.get("name", "Chapter"),
+                        description=ch_data.get("description"),
+                        order=unit_data.get("chapters", []).index(ch_data),
+                        estimated_hours=ch_data.get("estimated_hours", 1.0),
+                        difficulty=ch_data.get("difficulty", 1),
+                    )
+                    db.add(chapter)
+                    await db.flush()
+
+                    for tp_data in ch_data.get("topics", []):
+                        topic = Topic(
+                            chapter_id=chapter.id,
+                            name=tp_data.get("name", "Topic"),
+                            content=tp_data.get("content", text[:500]),
+                            order=ch_data.get("topics", []).index(tp_data),
+                        )
+                        db.add(topic)
+                        await db.flush()
+
+            await db.commit()
+            logger.info(
+                f"Generated {len(info.get('units', []))} units for subject {subject.id} "
+                f"from file {file.original_filename}"
+            )
+        except Exception as e:
+            logger.warning(f"Auto-organization for existing subject failed: {e}")
+            await db.rollback()
 
     async def _update_status(self, db: AsyncSession, file_id: uuid.UUID, status: str):
         stmt = update(File).where(File.id == file_id).values(status=status)

@@ -34,6 +34,17 @@ export default function WorkflowPage() {
     loadSubjects();
   }, []);
 
+  useEffect(() => {
+    if (!selectedSubject) return;
+    const timer = setInterval(() => loadWorkflow(selectedSubject, true), 15000);
+    const onFocus = () => loadWorkflow(selectedSubject, true);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [selectedSubject]);
+
   const loadSubjects = async () => {
     try {
       const data = await api.getSubjects();
@@ -41,8 +52,8 @@ export default function WorkflowPage() {
     } finally { setLoading(false); }
   };
 
-  const loadWorkflow = async (subjectId: string) => {
-    setLoading(true);
+  const loadWorkflow = async (subjectId: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await api.getWorkflow(subjectId);
 
