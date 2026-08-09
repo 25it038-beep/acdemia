@@ -205,6 +205,8 @@ class FileUploadResponse(BaseModel):
     status: str
     pages: int
     chunks: int
+    subject_id: Optional[UUID] = None
+    content_preview: Optional[str] = None
     created_at: datetime
 
     class Config:

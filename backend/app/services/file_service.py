@@ -273,6 +273,9 @@ class FileProcessor:
 
                 await db.commit()
 
+                if info.get("units"):
+                    await self._notify_workflow_ready(db, file, subject)
+
                 # Push to Neo4j if available
                 try:
                     from app.services.knowledge_service import knowledge_graph
@@ -293,6 +296,22 @@ class FileProcessor:
                 await db.rollback()
         else:
             await self._organize_existing_subject(db, file, text)
+
+    async def _notify_workflow_ready(self, db: AsyncSession, file: File, subject: Subject) -> None:
+        """Notify the user that a workflow was generated from their file."""
+        try:
+            from app.api.notifications import create_notification
+            await create_notification(
+                db,
+                user_id=file.user_id,
+                title="Workflow generated",
+                message=f"Course structure for \"{file.original_filename}\" is ready. Open the workflow to start learning.",
+                notification_type="success",
+                action_url=f"/workflow?subject={subject.id}",
+            )
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to create workflow notification: {e}")
 
     async def _organize_existing_subject(
         self, db: AsyncSession, file: File, text: str
@@ -395,6 +414,8 @@ class FileProcessor:
                 f"Generated {len(info.get('units', []))} units for subject {subject.id} "
                 f"from file {file.original_filename}"
             )
+            if info.get("units"):
+                await self._notify_workflow_ready(db, file, subject)
         except Exception as e:
             logger.warning(f"Auto-organization for existing subject failed: {e}")
             await db.rollback()

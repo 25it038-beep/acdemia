@@ -5,7 +5,8 @@ import { useDropzone } from 'react-dropzone';
 import { api } from '@/lib/api';
 import { FileUpload } from '@/types';
 import { motion } from 'framer-motion';
-import { Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Search, Trash2 } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Search, Trash2, Map, ChevronDown, ChevronUp } from 'lucide-react';
+import Link from 'next/link';
 
 const fileIcons: Record<string, string> = {
   pdf: '📄',
@@ -32,6 +33,20 @@ export default function LibraryPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      api.getFiles().then(setFiles).catch(() => {});
+    }, 10000);
+    const onFocus = () => api.getFiles().then(setFiles).catch(() => {});
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const loadData = async () => {
     try {
@@ -172,6 +187,39 @@ export default function LibraryPage() {
                 {file.pages > 0 && <span>{file.pages} pages</span>}
                 {file.chunks > 0 && <span>{file.chunks} chunks</span>}
               </div>
+
+              {file.subject_id && (
+                <div className="mt-2 text-xs text-white/40">
+                  {subjects.find((s) => s.id === file.subject_id)?.name || 'Course'}
+                </div>
+              )}
+
+              {file.status === 'completed' && file.content_preview && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setExpanded((p) => ({ ...p, [file.id]: !p[file.id] }))}
+                    className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
+                  >
+                    {expanded[file.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    Extracted content
+                  </button>
+                  {expanded[file.id] && (
+                    <p className="mt-2 text-xs text-white/50 line-clamp-6 whitespace-pre-line">
+                      {file.content_preview}...
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {file.subject_id && file.status === 'completed' && (
+                <Link
+                  href={`/workflow?subject=${file.subject_id}`}
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-medium transition-colors"
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  View Workflow
+                </Link>
+              )}
             </motion.div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Node,
   Edge,
@@ -29,10 +30,19 @@ export default function WorkflowPage() {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     loadSubjects();
   }, []);
+
+  useEffect(() => {
+    const subjectParam = searchParams.get('subject');
+    if (subjectParam) {
+      setSelectedSubject(subjectParam);
+      loadWorkflow(subjectParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedSubject) return;

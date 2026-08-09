@@ -70,6 +70,8 @@ async def upload_file(
         status=file_record.status,
         pages=file_record.pages,
         chunks=file_record.chunks,
+        subject_id=file_record.subject_id,
+        content_preview=(file_record.extracted_text or "")[:300],
         created_at=file_record.created_at,
     )
 
@@ -95,6 +97,8 @@ async def list_files(
             status=f.status,
             pages=f.pages,
             chunks=f.chunks,
+            subject_id=f.subject_id,
+            content_preview=(f.extracted_text or "")[:300],
             created_at=f.created_at,
         )
         for f in files

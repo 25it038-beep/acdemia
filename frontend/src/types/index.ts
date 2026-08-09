@@ -90,6 +90,8 @@ export interface FileUpload {
   status: string;
   pages: number;
   chunks: number;
+  subject_id?: string | null;
+  content_preview?: string | null;
   created_at: string;
 }
 
