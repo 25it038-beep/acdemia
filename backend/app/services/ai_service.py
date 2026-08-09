@@ -13,7 +13,11 @@ def _strip_think(text: str) -> str:
     """Remove reasoning blocks some Groq models wrap their answers in."""
     if not text:
         return text
-    return THINK_BLOCK_RE.sub("", text).strip()
+    stripped = THINK_BLOCK_RE.sub("", text).strip()
+    if "<think" in stripped:
+        # Block was truncated (no closing tag) — the final answer is lost anyway
+        return ""
+    return stripped
 
 
 def _make_client(api_key: Optional[str], base_url: str = None):
@@ -283,9 +287,14 @@ class AIProvider:
             {"role": "user", "content": f"Content to summarize:\n\n{content[:10000]}"},
         ]
         result = ""
-        async for chunk in self.chat(messages, temperature=0.3, max_tokens=max_length * 2, task="chat"):
-            data = json.loads(chunk)
-            result += data.get("content", "")
+        # qwen reasoning models spend tokens on thinking — give a generous budget and retry once if truncated
+        for _ in range(2):
+            result = ""
+            async for chunk in self.chat(messages, temperature=0.3, max_tokens=max(2048, max_length * 4), task="chat"):
+                data = json.loads(chunk)
+                result += data.get("content", "")
+            if result.strip():
+                break
         return {
             "title": summary_type.replace("_", " ").title(),
             "content": result,
