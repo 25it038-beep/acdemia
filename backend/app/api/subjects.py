@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
@@ -44,7 +44,10 @@ async def _ensure_topic_access(db: AsyncSession, topic_id: uuid.UUID, user) -> T
 # --- Subject CRUD ---
 @router.post("/", response_model=SubjectResponse)
 async def create_subject(
-    data: SubjectCreate, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)
+    data: SubjectCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     subject = Subject(
         user_id=user.id, **data.model_dump(exclude_none=True)
@@ -52,6 +55,12 @@ async def create_subject(
     db.add(subject)
     await db.commit()
     await db.refresh(subject)
+
+    # Generate the workflow from course info (description/syllabus) in the background
+    if data.description or data.syllabus:
+        from app.services.file_service import file_processor
+        background_tasks.add_task(file_processor.organize_from_course, subject.id)
+
     return SubjectResponse(
         id=subject.id,
         name=subject.name,

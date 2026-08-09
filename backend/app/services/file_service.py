@@ -290,7 +290,12 @@ class FileProcessor:
                 await db.commit()
 
                 if info.get("units"):
-                    await self._notify_workflow_ready(db, file, subject)
+                    await self._notify_workflow_ready(
+                        db,
+                        subject,
+                        f"Course structure for \"{file.original_filename}\" is ready. Open the workflow to start learning.",
+                        user_id=file.user_id,
+                    )
 
                 # Push to Neo4j if available
                 try:
@@ -313,15 +318,17 @@ class FileProcessor:
         else:
             await self._organize_existing_subject(db, file, text)
 
-    async def _notify_workflow_ready(self, db: AsyncSession, file: File, subject: Subject) -> None:
-        """Notify the user that a workflow was generated from their file."""
+    async def _notify_workflow_ready(
+        self, db: AsyncSession, subject: Subject, message: str, user_id: uuid.UUID
+    ) -> None:
+        """Notify the user that a workflow was generated."""
         try:
             from app.api.notifications import create_notification
             await create_notification(
                 db,
-                user_id=file.user_id,
+                user_id=user_id,
                 title="Workflow generated",
-                message=f"Course structure for \"{file.original_filename}\" is ready. Open the workflow to start learning.",
+                message=message,
                 notification_type="success",
                 action_url=f"/workflow?subject={subject.id}",
             )
@@ -329,28 +336,33 @@ class FileProcessor:
         except Exception as e:
             logger.warning(f"Failed to create workflow notification: {e}")
 
-    async def _organize_existing_subject(
-        self, db: AsyncSession, file: File, text: str
+    def _build_course_context(self, subject: Subject) -> str:
+        """Course metadata + syllabus to guide workflow generation."""
+        import json as j
+        parts = []
+        if subject.description:
+            parts.append(f"Description: {subject.description}")
+        if subject.university:
+            parts.append(f"University: {subject.university}")
+        if subject.semester:
+            parts.append(f"Semester: {subject.semester}")
+        if subject.subject_code:
+            parts.append(f"Course code: {subject.subject_code}")
+        if subject.syllabus:
+            parts.append(f"Syllabus: {j.dumps(subject.syllabus, indent=2)[:1500]}")
+        return "\n".join(parts)
+
+    async def _generate_for_subject(
+        self, db: AsyncSession, subject: Subject, user_content: str, source: str
     ) -> None:
-        """Generate units/chapters/topics for a course the file was uploaded into."""
+        """Run the Groq structure generation for a subject (shared by file/course paths)."""
         from app.services.ai_service import ai_provider
         import json as j
 
-        result = await db.execute(select(Subject).where(Subject.id == file.subject_id))
-        subject = result.scalar_one_or_none()
-        if not subject:
-            return
-
-        existing_units = await db.scalar(
-            select(func.count(Unit.id)).where(Unit.subject_id == subject.id)
-        )
-        if existing_units:
-            logger.info(f"Subject {subject.id} already has units, skipping generation")
-            return
-
         prompt = (
-            "Analyze the following educational content for the course '{{COURSE_NAME}}' "
-            "and respond with valid JSON only, exactly this shape (NO markdown fences):\n"
+            "You are a curriculum designer. Build the course workflow for "
+            "'{{COURSE_NAME}}' from the provided course information and material. "
+            "Respond with valid JSON only, exactly this shape (NO markdown fences):\n"
             "{\n"
             '  "units": [\n'
             '    {\n'
@@ -372,12 +384,13 @@ class FileProcessor:
             '    }\n'
             '  ]\n'
             "}\n"
-            "Split the material into logical units (modules) and chapters (lessons) "
-            "with 2-6 topics each. Estimated hours 1-4, difficulty 1-5."
+            "Cover the full scope of the course. Split it into logical units (modules) "
+            "and chapters (lessons) with 2-6 topics each. Estimated hours 1-4, "
+            "difficulty 1-5."
         ).replace("{{COURSE_NAME}}", subject.name)
         messages = [
             {"role": "system", "content": prompt},
-            {"role": "user", "content": text[:5000]},
+            {"role": "user", "content": user_content},
         ]
 
         result_text = ""
@@ -419,22 +432,75 @@ class FileProcessor:
                         topic = Topic(
                             chapter_id=chapter.id,
                             name=tp_data.get("name", "Topic"),
-                            content=tp_data.get("content", text[:500]),
+                            content=tp_data.get("content", user_content[:500]),
                             order=ch_data.get("topics", []).index(tp_data),
                         )
                         db.add(topic)
                         await db.flush()
 
             await db.commit()
-            logger.info(
-                f"Generated {len(info.get('units', []))} units for subject {subject.id} "
-                f"from file {file.original_filename}"
-            )
-            if info.get("units"):
-                await self._notify_workflow_ready(db, file, subject)
+            count = len(info.get("units", []))
+            logger.info(f"Generated {count} units for subject {subject.id} from {source}")
+            if count:
+                await self._notify_workflow_ready(
+                    db,
+                    subject,
+                    f"Course structure for \"{subject.name}\" is ready. Open the workflow to start learning.",
+                    user_id=subject.user_id,
+                )
         except Exception as e:
-            logger.warning(f"Auto-organization for existing subject failed: {e}")
+            logger.warning(f"Workflow generation failed for subject {subject.id}: {e}")
             await db.rollback()
+
+    async def _organize_existing_subject(
+        self, db: AsyncSession, file: File, text: str
+    ) -> None:
+        """Generate units/chapters/topics for a course combining course info + file content."""
+        result = await db.execute(select(Subject).where(Subject.id == file.subject_id))
+        subject = result.scalar_one_or_none()
+        if not subject:
+            return
+
+        existing_units = await db.scalar(
+            select(func.count(Unit.id)).where(Unit.subject_id == subject.id)
+        )
+        if existing_units:
+            logger.info(f"Subject {subject.id} already has units, skipping generation")
+            return
+
+        context = self._build_course_context(subject)
+        if context:
+            user_content = (
+                f"Course information:\n{context}\n\n"
+                f"Material from \"{file.original_filename}\":\n{text[:5000]}"
+            )
+        else:
+            user_content = f"Material from \"{file.original_filename}\":\n{text[:5000]}"
+
+        await self._generate_for_subject(
+            db, subject, user_content, f"file {file.original_filename}"
+        )
+
+    async def organize_from_course(self, subject_id: uuid.UUID) -> None:
+        """Generate a workflow from course info alone (e.g. on course creation)."""
+        from app.core.database import async_session_factory
+
+        async with async_session_factory() as db:
+            subject = await db.get(Subject, subject_id)
+            if not subject:
+                return
+            existing_units = await db.scalar(
+                select(func.count(Unit.id)).where(Unit.subject_id == subject.id)
+            )
+            if existing_units:
+                return
+            context = self._build_course_context(subject)
+            if not context:
+                logger.info(f"Subject {subject.id} has no description/syllabus, skipping")
+                return
+            await self._generate_for_subject(
+                db, subject, f"Course information:\n{context}", "course info"
+            )
 
     async def _update_status(self, db: AsyncSession, file_id: uuid.UUID, status: str):
         stmt = update(File).where(File.id == file_id).values(status=status)
