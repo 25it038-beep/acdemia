@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { playSuccessSound } from '@/lib/sound';
@@ -8,6 +8,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { PenSquare, CheckCircle2, XCircle, AlertCircle, ArrowRight, Clock, BarChart3 } from 'lucide-react';
 
 export default function QuizzesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-96">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <QuizzesPageInner />
+    </Suspense>
+  );
+}
+
+function QuizzesPageInner() {
   const router = useRouter();
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);

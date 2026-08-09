@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Node,
@@ -25,6 +25,18 @@ const WorkflowMapFlow = dynamic(() => import('@/components/WorkflowMapFlow'), {
 
 
 export default function WorkflowPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-96">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <WorkflowPageInner />
+    </Suspense>
+  );
+}
+
+function WorkflowPageInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
   const [loading, setLoading] = useState(true);
