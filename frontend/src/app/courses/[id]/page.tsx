@@ -14,9 +14,9 @@ export default function CourseDetailPage() {
   const [units, setUnits] = useState<any[]>([]);
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Record<string, any[]>>({});
-  const [openChapter, setOpenChapter] = useState<string | null>(null);
+  const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
   const [topics, setTopics] = useState<Record<string, any[]>>({});
-  const [loadingTopics, setLoadingTopics] = useState<Record<string, boolean>>({});
+  const [loadingUnits, setLoadingUnits] = useState<Record<string, boolean>>({});
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [quizLoading, setQuizLoading] = useState<string | null>(null);
@@ -42,33 +42,46 @@ export default function CourseDetailPage() {
     setChapters((prev) => ({ ...prev, [unitId]: data }));
   };
 
-  const toggleUnit = (unitId: string) => {
+  const toggleUnit = async (unitId: string) => {
     const newExpanded = new Set(expandedUnits);
     if (newExpanded.has(unitId)) {
       newExpanded.delete(unitId);
-    } else {
-      newExpanded.add(unitId);
-      loadChapters(unitId);
-    }
-    setExpandedUnits(newExpanded);
-  };
-
-  const toggleChapter = async (chapter: any) => {
-    if (openChapter === chapter.id) {
-      setOpenChapter(null);
+      setExpandedUnits(newExpanded);
       return;
     }
-    setOpenChapter(chapter.id);
-    if (!topics[chapter.id]) {
-      setLoadingTopics((t) => ({ ...t, [chapter.id]: true }));
-      try {
-        const data = await api.getTopics(params.id as string, chapter.unit_id, chapter.id);
-        setTopics((prev) => ({ ...prev, [chapter.id]: data }));
-        setExpandedTopics((prev) => new Set([...prev, ...data.map((t: any) => t.id)]));
-      } finally {
-        setLoadingTopics((t) => ({ ...t, [chapter.id]: false }));
-      }
+    newExpanded.add(unitId);
+    setExpandedUnits(newExpanded);
+
+    let data = chapters[unitId];
+    if (!data) {
+      data = await api.getChapters(params.id as string, unitId);
+      setChapters((prev) => ({ ...prev, [unitId]: data }));
     }
+
+    const chapterIds = (data || []).map((ch: any) => ch.id);
+    const toLoad = (data || []).filter((ch: any) => !topics[ch.id]);
+    setLoadingUnits((l) => ({ ...l, [unitId]: toLoad.length > 0 }));
+    const allTopics: Record<string, any[]> = {};
+    await Promise.all(
+      toLoad.map(async (ch: any) => {
+        try {
+          allTopics[ch.id] = await api.getTopics(params.id as string, unitId, ch.id);
+        } catch {
+          allTopics[ch.id] = [];
+        }
+      })
+    );
+    if (Object.keys(allTopics).length) setTopics((prev) => ({ ...prev, ...allTopics }));
+    setLoadingUnits((l) => ({ ...l, [unitId]: false }));
+    setOpenChapters((prev) => new Set([...prev, ...chapterIds]));
+    setExpandedTopics((prev) => new Set([...prev, ...Object.values(allTopics).flat().map((t: any) => t.id)]));
+  };
+
+  const toggleChapter = (chapterId: string) => {
+    const next = new Set(openChapters);
+    if (next.has(chapterId)) next.delete(chapterId);
+    else next.add(chapterId);
+    setOpenChapters(next);
   };
 
   const toggleTopic = (topicId: string) => {
@@ -209,10 +222,10 @@ export default function CourseDetailPage() {
                     {(chapters[unit.id] || []).map((chapter: any) => (
                       <div key={chapter.id} className="rounded-lg bg-white/5">
                         <button
-                          onClick={() => toggleChapter(chapter)}
+                          onClick={() => toggleChapter(chapter.id)}
                           className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-colors cursor-pointer"
                         >
-                          {openChapter === chapter.id ? (
+                          {openChapters.has(chapter.id) ? (
                             <ChevronDown className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                           ) : (
                             <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
@@ -234,9 +247,9 @@ export default function CourseDetailPage() {
                           </div>
                         </button>
 
-                        {openChapter === chapter.id && (
+                        {openChapters.has(chapter.id) && (
                           <div className="border-t border-white/5 p-4 space-y-3">
-                            {loadingTopics[chapter.id] ? (
+                            {loadingUnits[chapter.unit_id] ? (
                               <div className="flex items-center justify-center py-6">
                                 <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
                               </div>
