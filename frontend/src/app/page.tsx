@@ -5,7 +5,7 @@ import { motion, useInView } from 'framer-motion';
 import EnterAppButton from '@/components/EnterAppButton';
 import { Sparkles, BookOpen, Brain, Network, FileText, Target,
   BarChart3, Mic, Upload, Map, ArrowRight, Play, ChevronDown,
-  Star, Quote, GraduationCap, Bot, User, Zap
+  GraduationCap, Bot, User, Zap
 } from 'lucide-react';
 
 // â”€â”€â”€ Particles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -79,34 +79,6 @@ function FeatureCard({ icon: Icon, title, desc, delay }: { icon: any; title: str
   );
 }
 
-// â”€â”€â”€ Testimonial Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function TestimonialCard({ name, role, text, avatar, rating }: { name: string; role: string; text: string; avatar: string; rating: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="testimonial-card"
-    >
-      <div className="flex items-center gap-1 mb-4">
-        {Array.from({ length: rating }).map((_, i) => (
-          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-        ))}
-      </div>
-      <Quote className="w-6 h-6 text-indigo-500/30 mb-2" />
-      <p className="text-sm text-white/70 leading-relaxed mb-4">{text}</p>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-          {avatar}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-white">{name}</p>
-          <p className="text-xs text-white/40">{role}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 // â”€â”€â”€ Live Demo Chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LiveDemoChat() {
@@ -276,11 +248,6 @@ export default function LandingPage() {
     { value: 95, suffix: '%', label: 'Student Satisfaction' },
   ];
 
-  const testimonials = [
-    { name: 'Priya Sharma', role: 'Computer Science, MIT', text: 'Academia AI completely transformed how I study. The knowledge graph helped me connect concepts I never realized were related.', avatar: 'PS', rating: 5 },
-    { name: 'Rahul Verma', role: 'Mechanical Eng., IIT', text: 'The AI tutor explains complex engineering concepts better than most professors. My grades improved from C to A.', avatar: 'RV', rating: 5 },
-    { name: 'Ananya Patel', role: 'Medicine, AIIMS', text: 'Uploaded 2000+ pages of medical textbooks. Academia AI organized everything and created a perfect study roadmap.', avatar: 'AP', rating: 5 },
-  ];
 
   return (
     <div className="aurora min-h-screen">
@@ -464,29 +431,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€ Testimonials â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <section className="relative px-6 py-24">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="section-header"
-          >
-            <h2 className="section-title">
-              What students{' '}
-              <span className="gradient-text">say</span>
-            </h2>
-            <p className="section-subtitle">Thousands of students have transformed their learning experience.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <TestimonialCard key={t.name} {...t} />
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* â”€â”€â”€â”€â”€â”€â”€â”€ CTA â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="relative px-6 py-24">

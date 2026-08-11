@@ -64,6 +64,7 @@ export default function CourseDetailPage() {
       try {
         const data = await api.getTopics(params.id as string, chapter.unit_id, chapter.id);
         setTopics((prev) => ({ ...prev, [chapter.id]: data }));
+        setExpandedTopics((prev) => new Set([...prev, ...data.map((t: any) => t.id)]));
       } finally {
         setLoadingTopics((t) => ({ ...t, [chapter.id]: false }));
       }
