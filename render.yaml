@@ -23,14 +23,24 @@ services:
 
       # ── AI Keys (set in Render dashboard)
       - key: AI_PROVIDER
-        value: groq
+        value: nvidia
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: CHAT_MODEL
+        value: meta/llama-3.1-8b-instruct
+      - key: STEM_MODEL
+        value: meta/llama-3.1-8b-instruct
+      - key: CODING_MODEL
+        value: meta/llama-3.1-8b-instruct
+      - key: VISION_MODEL
+        value: meta/llama-3.1-8b-instruct
+      - key: EMBEDDING_MODEL
+        value: nvidia/nv-embedqa-e5-v5
       - key: GROQ_API_KEY
         sync: false
       - key: CLOUDFLARE_API_KEY
         sync: false
       - key: CLOUDFLARE_ACCOUNT_ID
-        sync: false
-      - key: NVIDIA_API_KEY
         sync: false
       - key: OPENAI_API_KEY
         sync: false

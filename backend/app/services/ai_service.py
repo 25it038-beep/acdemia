@@ -19,11 +19,11 @@ FALLBACK_MODELS: Dict[str, Dict[str, str]] = {
         "embed": "@cf/qwen/qwen3-embedding-0.6b",
     },
     "nvidia": {
-        "chat": "meta/llama-3.3-70b-instruct",
-        "stem": "deepseek-ai/deepseek-r1",
-        "coding": "meta/llama-3.3-70b-instruct",
-        "vision": "meta/llama-3.3-70b-instruct",
-        "embed": "nvidia/embed-qa-4",
+        "chat": "meta/llama-3.1-8b-instruct",
+        "stem": "meta/llama-3.1-8b-instruct",
+        "coding": "meta/llama-3.1-8b-instruct",
+        "vision": "meta/llama-3.1-8b-instruct",
+        "embed": "nvidia/nv-embedqa-e5-v5",
     },
     "openrouter": {
         "chat": "meta-llama/llama-3.3-70b-instruct:free",
@@ -131,11 +131,11 @@ class AIProvider:
                 return None
             client = _make_client(settings.GROQ_API_KEY, settings.GROQ_BASE_URL)
             models = {
-                "chat": settings.CHAT_MODEL,
-                "stem": settings.STEM_MODEL,
-                "coding": settings.CODING_MODEL,
-                "vision": settings.VISION_MODEL,
-                "embed": settings.EMBEDDING_MODEL,
+                "chat": "llama-3.1-8b-instant",
+                "stem": "llama-3.3-70b-versatile",
+                "coding": "openai/gpt-oss-120b",
+                "vision": "llama-3.1-8b-instant",
+                "embed": "@cf/baai/bge-large-en-v1.5",
             }
         elif name == "cloudflare":
             cf_base = self._cloudflare_base_url()
@@ -153,7 +153,13 @@ class AIProvider:
                 or settings.NVIDIA_VISION_API_KEY,
                 settings.NVIDIA_BASE_URL,
             )
-            models = dict(FALLBACK_MODELS["nvidia"])
+            models = {
+                "chat": settings.CHAT_MODEL,
+                "stem": settings.STEM_MODEL,
+                "coding": settings.CODING_MODEL,
+                "vision": settings.VISION_MODEL,
+                "embed": settings.EMBEDDING_MODEL,
+            }
         elif name == "openrouter":
             if not settings.OPENROUTER_API_KEY:
                 return None
@@ -247,6 +253,8 @@ class AIProvider:
         if stream:
             saw_content = False
             async for chunk in response:
+                if not chunk.choices:
+                    continue
                 content = chunk.choices[0].delta.content
                 if content:
                     saw_content = True
@@ -259,6 +267,10 @@ class AIProvider:
                     f"stream ended without content (model {model})"
                 )
         else:
+            if not response.choices:
+                raise EmptyResponseError(
+                    f"empty response (model {model})"
+                )
             content = _strip_think(_normalize_content(response.choices[0].message.content))
             if not content:
                 raise EmptyResponseError(
@@ -314,8 +326,12 @@ class AIProvider:
                 continue
             try:
                 batches = [texts[i:i + 128] for i in range(0, len(texts), 128)]
+                kwargs = {}
+                if "e5" in embed_model:
+                    # NVIDIA asymmetric embed models require input_type
+                    kwargs["extra_body"] = {"input_type": "passage"}
                 results = await _asyncio.gather(*[
-                    client.embeddings.create(model=embed_model, input=batch)
+                    client.embeddings.create(model=embed_model, input=batch, **kwargs)
                     for batch in batches
                 ])
                 vectors = []

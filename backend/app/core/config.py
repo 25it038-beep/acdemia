@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: Optional[str] = None
     CLERK_ISSUER: str = "https://natural-cat-23.clerk.accounts.dev"
 
-    # AI Provider (primary: Groq, fallbacks)
-    AI_PROVIDER: str = "groq"
+    # AI Provider (primary: NVIDIA, fallbacks)
+    AI_PROVIDER: str = "nvidia"
     GROQ_API_KEY: Optional[str] = None
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     CLOUDFLARE_API_KEY: Optional[str] = None
@@ -57,13 +57,13 @@ class Settings(BaseSettings):
     NVIDIA_RIVA_API_KEY: Optional[str] = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
-    # Per-task models (Groq)
-    CHAT_MODEL: str = "llama-3.3-70b-versatile"
-    STEM_MODEL: str = "llama-3.3-70b-versatile"
-    CODING_MODEL: str = "openai/gpt-oss-120b"
-    VISION_MODEL: str = "llama-3.3-70b-versatile"
-    EMBEDDING_MODEL: str = "@cf/baai/bge-large-en-v1.5"
-    RERANK_MODEL: str = "@cf/baai/bge-large-en-v1.5"
+    # Per-task models (NVIDIA)
+    CHAT_MODEL: str = "meta/llama-3.1-8b-instruct"
+    STEM_MODEL: str = "meta/llama-3.1-8b-instruct"
+    CODING_MODEL: str = "meta/llama-3.1-8b-instruct"
+    VISION_MODEL: str = "meta/llama-3.1-8b-instruct"
+    EMBEDDING_MODEL: str = "nvidia/nv-embedqa-e5-v5"
+    RERANK_MODEL: str = "nvidia/nv-embedqa-e5-v5"
 
     # Embedding
     EMBEDDING_DIMENSION: int = 1024
