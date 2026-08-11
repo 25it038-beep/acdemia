@@ -52,24 +52,21 @@ async def _fetch_clerk_profile(user_id: str) -> dict:
         return profile
 
 
-async def get_demo_user(db: AsyncSession) -> User:
-    """Get or create the shared demo user used when AUTH_BYPASS is enabled."""
-    result = await db.execute(select(User).where(User.username == "demo"))
+async def get_dev_user(db: AsyncSession) -> User:
+    """Dev-only (AUTH_BYPASS): a private per-email user for local development.
+    Never a shared account — data stays isolated to this user alone."""
+    email = (settings.AUTH_BYPASS_EMAIL or "dev@academia.ai").strip().lower()
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user:
         return user
     user = User(
-        email="demo@academia.ai",
-        username="demo",
-        full_name="Demo Student",
-        hashed_password=get_password_hash("demo"),
+        email=email,
+        username=await _unique_username(db, email.split("@")[0]),
+        full_name="Dev User",
+        hashed_password=get_password_hash(str(uuid.uuid4())),
         role=UserRole.STUDENT,
-        university="Academia University",
-        course="Computer Science",
-        semester=3,
-        education_level="Undergraduate",
-        occupation="Student",
-        domain="Computer Science",
+        is_verified=True,
     )
     db.add(user)
     await db.commit()
@@ -148,7 +145,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     if settings.AUTH_BYPASS:
-        return await get_demo_user(db)
+        return await get_dev_user(db)
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
     payload = verify_clerk_token(credentials.credentials)

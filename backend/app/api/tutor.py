@@ -476,7 +476,7 @@ async def submit_quiz(
         user_answer = answer.get("answer", "")
 
         q_result = await db.execute(
-            select(Question).where(Question.id == to_uuid(question_id))
+            select(Question).where(Question.id == to_uuid(question_id), Question.quiz_id == quiz_id)
         )
         question = q_result.scalar_one_or_none()
         if not question:
@@ -564,7 +564,13 @@ async def submit_quiz(
 
     # Chapter/course completed → notify user once all its topics are mastered
     if topic_id:
-        topic_result = await db.execute(select(Topic).where(Topic.id == topic_id))
+        topic_result = await db.execute(
+            select(Topic)
+            .join(Chapter, Topic.chapter_id == Chapter.id)
+            .join(Unit, Chapter.unit_id == Unit.id)
+            .join(Subject, Unit.subject_id == Subject.id)
+            .where(Topic.id == topic_id, Subject.user_id == user.id)
+        )
         topic = topic_result.scalar_one_or_none()
         if topic and topic.chapter_id:
             chapter = await db.get(Chapter, topic.chapter_id)

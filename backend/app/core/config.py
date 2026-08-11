@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENV: str = "production"
 
-    # Dev: skip JWT checks and auto-login a demo user (set true in .env)
+    # Dev: skip Clerk JWT checks and auto-login a private dev user
+    # (never a shared demo account — each env has its own isolated user)
     AUTH_BYPASS: bool = False
+    AUTH_BYPASS_EMAIL: str = "dev@academia.ai"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://academia:academia@localhost:5432/academia"
