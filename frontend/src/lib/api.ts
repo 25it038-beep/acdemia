@@ -1,7 +1,10 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { ChatMessage } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Use same-origin relative paths by default: Next.js rewrites /api/* server-side
+// to the backend, so the app works from any device (LAN or deployed) without
+// hardcoding the backend host. Set NEXT_PUBLIC_API_URL to override (e.g. Render).
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 let tokenProvider: () => Promise<string | null> = async () => null;
 
