@@ -7,7 +7,9 @@ import enum
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    # Naive UTC: Postgres columns are TIMESTAMP WITHOUT TIME ZONE; asyncpg
+    # rejects offset-aware datetimes against them (DataError on INSERT).
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def new_uuid():
