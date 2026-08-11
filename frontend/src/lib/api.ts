@@ -70,6 +70,11 @@ class ApiClient {
     return res.data;
   }
 
+  async getUnitDetail(unitId: string) {
+    const res = await this.client.get(`/api/units/${unitId}`);
+    return res.data;
+  }
+
   async createUnit(subjectId: string, data: any) {
     const res = await this.client.post(`/api/subjects/${subjectId}/units`, data);
     return res.data;

@@ -212,6 +212,37 @@ async def _unit_is_completed(db: AsyncSession, unit: Unit, user_id: uuid.UUID) -
 
 
 # --- Unit Deep Exploration & Assessment ---
+@router.get("/units/{unit_id}")
+async def get_unit_detail(
+    unit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Get a single unit with its subject metadata (user-scoped)."""
+    unit_result = await db.execute(
+        select(Unit, Subject)
+        .join(Subject, Unit.subject_id == Subject.id)
+        .where(Unit.id == unit_id, Subject.user_id == user.id)
+    )
+    row = unit_result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Unit not found")
+    unit, subject = row[0], row[1]
+    return {
+        "unit": {
+            "id": str(unit.id),
+            "subject_id": str(unit.subject_id),
+            "name": unit.name,
+            "description": unit.description,
+            "order": unit.order,
+        },
+        "subject": {
+            "id": str(subject.id),
+            "name": subject.name,
+        },
+    }
+
+
 @router.post("/units/{unit_id}/explore")
 async def explore_unit(
     unit_id: uuid.UUID,
