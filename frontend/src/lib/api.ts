@@ -193,6 +193,13 @@ class ApiClient {
     return res.data;
   }
 
+  async getChapterMaterial(chapterId: string) {
+    const res = await this.client.post(`/api/chapters/${chapterId}/material`, {}, {
+      timeout: 300000,
+    });
+    return res.data;
+  }
+
   async createUnitAssessment(unitId: string) {
     const res = await this.client.post(`/api/units/${unitId}/assessment`, {}, {
       timeout: 300000,

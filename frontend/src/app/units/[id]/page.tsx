@@ -6,8 +6,11 @@ import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   BookOpen, ChevronDown, ChevronRight, Clock, ClipboardList, Sparkles,
-  Loader2, Send, Bot, User, Lightbulb, FileQuestion, GraduationCap, ArrowLeft
+  Loader2, Send, Bot, User, Lightbulb, GraduationCap, ArrowLeft, FileText
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MarkdownRenderer = dynamic(() => import('@/components/MarkdownRenderer'), { ssr: false });
 
 type ChatMessageT = { role: string; content: string };
 
@@ -26,11 +29,12 @@ export default function UnitDetailPage() {
   const [unit, setUnit] = useState<any>(null);
   const [subject, setSubject] = useState<any>(null);
   const [chapters, setChapters] = useState<any[]>([]);
-  const [topics, setTopics] = useState<Record<string, any[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [loadingTopics, setLoadingTopics] = useState(false);
-  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+  const [materials, setMaterials] = useState<Record<string, string>>({});
+  const [loadingMaterials, setLoadingMaterials] = useState<Record<string, boolean>>({});
+  const [unitMaterial, setUnitMaterial] = useState('');
+  const [loadingUnitMaterial, setLoadingUnitMaterial] = useState(false);
   const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
   const [messages, setMessages] = useState<ChatMessageT[]>([]);
   const [input, setInput] = useState('');
@@ -53,28 +57,35 @@ export default function UnitDetailPage() {
       setSubject(unitsData.subject);
       const chaptersData = await api.getChapters(unitsData.subject.id, unitId);
       setChapters(chaptersData);
-      if (chaptersData.length > 0) await loadAllTopics(unitsData.subject.id, unitId, chaptersData);
+      loadUnitMaterial();
+      chaptersData.forEach((ch: any) => loadChapterMaterial(ch.id));
     } finally {
       setLoading(false);
     }
   };
 
-  const loadAllTopics = async (subjectId: string, unitId: string, chs: any[]) => {
-    setLoadingTopics(true);
-    const allTopics: Record<string, any[]> = {};
-    await Promise.all(
-      chs.map(async (ch: any) => {
-        try {
-          allTopics[ch.id] = await api.getTopics(subjectId, unitId, ch.id);
-        } catch {
-          allTopics[ch.id] = [];
-        }
-      })
-    );
-    setTopics(allTopics);
-    const ids = Object.values(allTopics).flat().map((t: any) => t.id);
-    setExpandedTopics(new Set(ids));
-    setLoadingTopics(false);
+  const loadUnitMaterial = async () => {
+    setLoadingUnitMaterial(true);
+    try {
+      const res = await api.exploreUnit(unitId);
+      setUnitMaterial(res.content);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingUnitMaterial(false);
+    }
+  };
+
+  const loadChapterMaterial = async (chapterId: string) => {
+    setLoadingMaterials((l) => ({ ...l, [chapterId]: true }));
+    try {
+      const res = await api.getChapterMaterial(chapterId);
+      setMaterials((prev) => ({ ...prev, [chapterId]: res.content }));
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMaterials((l) => ({ ...l, [chapterId]: false }));
+    }
   };
 
   const toggleChapter = (chapterId: string) => {
@@ -82,13 +93,6 @@ export default function UnitDetailPage() {
     if (next.has(chapterId)) next.delete(chapterId);
     else next.add(chapterId);
     setCollapsedChapters(next);
-  };
-
-  const toggleTopic = (topicId: string) => {
-    const next = new Set(expandedTopics);
-    if (next.has(topicId)) next.delete(topicId);
-    else next.add(topicId);
-    setExpandedTopics(next);
   };
 
   const sendMessage = async (text?: string) => {
@@ -103,7 +107,6 @@ export default function UnitDetailPage() {
         message: content,
         mode: 'tutor',
         subject_id: subject?.id,
-        topic_id: topics && Object.values(topics).flat()[0]?.id,
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }]);
     } catch {
@@ -170,13 +173,43 @@ export default function UnitDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Content */}
         <div className="lg:col-span-2 space-y-4">
-          {loadingTopics ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+          {/* Unit full material */}
+          <div className="glass rounded-xl border border-white/10 overflow-hidden">
+            <div className="p-4 border-b border-white/5 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-400" />
+              <p className="font-medium text-white">{unit.name} — Full Study Material</p>
             </div>
-          ) : chapters.length === 0 ? (
+            <div className="p-5">
+              {loadingUnitMaterial ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+                  <span className="ml-2 text-sm text-white/40">Generating full unit material...</span>
+                </div>
+              ) : unitMaterial ? (
+                <div className="prose prose-invert max-w-none text-sm text-white/70 leading-relaxed
+                  [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-white [&_h1]:mt-6 [&_h1]:mb-3
+                  [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white [&_h2]:mt-5 [&_h2]:mb-2
+                  [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mt-4 [&_h3]:mb-2
+                  [&_li]:mb-1 [&_p]:mb-3 [&_strong]:text-white
+                  [&_code]:bg-black/40 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-emerald-200
+                  [&_pre]:bg-black/40 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:text-xs [&_pre]:overflow-x-auto [&_pre]:my-3">
+                  <MarkdownRenderer content={unitMaterial} />
+                </div>
+              ) : (
+                <button
+                  onClick={loadUnitMaterial}
+                  className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" /> Generate Full Unit Material
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Chapters with full material */}
+          {chapters.length === 0 ? (
             <div className="glass rounded-xl border border-white/10 p-8 text-center text-white/40">
-              No content in this unit yet
+              No chapters in this unit yet
             </div>
           ) : (
             chapters.map((chapter: any) => (
@@ -197,54 +230,34 @@ export default function UnitDetailPage() {
                       {chapter.estimated_hours}h · {chapter.difficulty}/5 difficulty
                     </p>
                   </div>
+                  {loadingMaterials[chapter.id] && <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />}
                 </button>
 
                 {!collapsedChapters.has(chapter.id) && (
-                  <div className="border-t border-white/5 p-4 space-y-3">
-                    {(topics[chapter.id] || []).map((topic: any) => (
-                      <div key={topic.id} className="rounded-lg bg-white/5 overflow-hidden">
-                        <button
-                          onClick={() => toggleTopic(topic.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-white/10 transition-colors"
-                        >
-                          {expandedTopics.has(topic.id) ? (
-                            <ChevronDown className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white/90">{topic.name}</p>
-                            {topic.summary && !expandedTopics.has(topic.id) && (
-                              <p className="text-xs text-white/40 mt-0.5 line-clamp-1">{topic.summary}</p>
-                            )}
-                          </div>
-                          {topic.difficulty && (
-                            <span className="text-[10px] text-white/30 flex-shrink-0">difficulty {topic.difficulty}/5</span>
-                          )}
-                        </button>
-                        {expandedTopics.has(topic.id) && (
-                          <div className="px-3 pb-3">
-                            {topic.content && (
-                              <div className="text-sm text-white/60 leading-relaxed">
-                                {topic.content.split('\n').map((line: string, i: number) =>
-                                  line.trim() ? <p key={i} className="mb-2">{line}</p> : null
-                                )}
-                              </div>
-                            )}
-                            {topic.formula && (
-                              <div className="mt-2 rounded-lg bg-indigo-500/10 border border-indigo-400/20 p-3 font-mono text-xs text-indigo-200">
-                                {topic.formula}
-                              </div>
-                            )}
-                            {topic.code_example && (
-                              <pre className="mt-2 rounded-lg bg-black/40 border border-white/10 p-3 text-xs text-emerald-200 overflow-x-auto">
-                                {topic.code_example}
-                              </pre>
-                            )}
-                          </div>
-                        )}
+                  <div className="border-t border-white/5 p-5">
+                    {loadingMaterials[chapter.id] ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                        <span className="ml-2 text-sm text-white/40">Generating full chapter material...</span>
                       </div>
-                    ))}
+                    ) : materials[chapter.id] ? (
+                      <div className="prose prose-invert max-w-none text-sm text-white/70 leading-relaxed
+                        [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-white [&_h1]:mt-6 [&_h1]:mb-3
+                        [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white [&_h2]:mt-5 [&_h2]:mb-2
+                        [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mt-4 [&_h3]:mb-2
+                        [&_li]:mb-1 [&_p]:mb-3 [&_strong]:text-white
+                        [&_code]:bg-black/40 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-emerald-200
+                        [&_pre]:bg-black/40 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:text-xs [&_pre]:overflow-x-auto [&_pre]:my-3">
+                        <MarkdownRenderer content={materials[chapter.id]} />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => loadChapterMaterial(chapter.id)}
+                        className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 transition-colors"
+                      >
+                        <Sparkles className="w-4 h-4" /> Generate Full Chapter Material
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -346,7 +359,6 @@ export default function UnitDetailPage() {
               </div>
               <div className="flex items-center gap-2 mt-2 text-[10px] text-white/30">
                 <Lightbulb className="w-3 h-3" /> Ask for examples, clarifications, or practice questions
-                <FileQuestion className="w-3 h-3 ml-1" />
               </div>
             </div>
           </div>

@@ -72,6 +72,12 @@ def _migrate_sqlite(sync_conn):
     except Exception:
         pass
     try:
+        existing = {row[1] for row in sync_conn.exec_driver_sql("PRAGMA table_info(chapters)").fetchall()}
+        if "material" not in existing:
+            sync_conn.exec_driver_sql("ALTER TABLE chapters ADD COLUMN material TEXT")
+    except Exception:
+        pass
+    try:
         existing = {row[1] for row in sync_conn.exec_driver_sql("PRAGMA table_info(files)").fetchall()}
         if "ml_analysis" not in existing:
             sync_conn.exec_driver_sql("ALTER TABLE files ADD COLUMN ml_analysis JSON")
@@ -89,6 +95,7 @@ def _migrate_pg(sync_conn):
         "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS subject_id UUID",
         "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS unit_id UUID",
         "ALTER TABLE units ADD COLUMN IF NOT EXISTS exploration TEXT",
+        "ALTER TABLE chapters ADD COLUMN IF NOT EXISTS material TEXT",
         "ALTER TABLE files ADD COLUMN IF NOT EXISTS ml_analysis JSONB",
     ]
     for stmt in statements:

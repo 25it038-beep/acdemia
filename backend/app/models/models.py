@@ -126,6 +126,7 @@ class Chapter(Base):
     unit_id = Column(Uuid(), ForeignKey("units.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    material = Column(Text, nullable=True)
     order = Column(Integer, default=0)
     estimated_hours = Column(Float, default=1.0)
     difficulty = Column(Integer, default=1)

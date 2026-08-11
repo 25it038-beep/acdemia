@@ -304,6 +304,80 @@ async def explore_unit(
     return {"unit_id": str(unit.id), "content": content, "cached": False}
 
 
+@router.post("/chapters/{chapter_id}/material")
+async def generate_chapter_material(
+    chapter_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Generate the FULL detailed lesson material for a chapter (cached in chapter.material)."""
+    from app.services.ai_service import ai_provider
+
+    chapter_result = await db.execute(
+        select(Chapter, Unit.name, Subject.name)
+        .join(Unit, Chapter.unit_id == Unit.id)
+        .join(Subject, Unit.subject_id == Subject.id)
+        .where(Chapter.id == chapter_id, Subject.user_id == user.id)
+    )
+    row = chapter_result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    chapter, unit_name, course_name = row[0], row[1], row[2]
+
+    if chapter.material:
+        return {"chapter_id": str(chapter.id), "content": chapter.material, "cached": True}
+
+    topics = (await db.execute(
+        select(Topic).where(Topic.chapter_id == chapter.id).order_by(Topic.order)
+    )).scalars().all()
+    topic_outline = "\n".join(
+        f"- {t.name}: {t.content or t.summary or ''}"
+        for t in topics
+    ) or "(no topics yet)"
+
+    prompt = (
+        "You are a world-class university professor. Write a COMPLETE, in-depth study "
+        "lesson for the chapter '{{CHAPTER}}' of the unit '{{UNIT}}' in the course "
+        "'{{COURSE}}'. This is a full teaching material, not a summary. Write in rich "
+        "markdown and cover ALL of the following, in this order:\n"
+        "## 1. Introduction\nWhy this matters and where it fits in the course.\n"
+        "## 2. Core Concepts\nExplain every concept below in depth, with definitions, "
+        "explanations, and context.\n"
+        "## 3. Detailed Explanations\nGo deep into how the ideas work, step by step.\n"
+        "## 4. Worked Examples\nAt least 2-3 fully worked examples with step-by-step "
+        "solutions.\n"
+        "## 5. Formulas & Key Points\nList all important formulas, laws, or key points.\n"
+        "## 6. Common Mistakes\nTypical errors students make and how to avoid them.\n"
+        "## 7. Practice Questions\n5 practice questions with answers.\n"
+        "## 8. Key Takeaways\nBullet-point summary of what the student must remember.\n"
+        "Topics to cover in this chapter:\n{{TOPICS}}\n"
+        "Write at least 800 words. Use markdown headings, bullet lists, and code/formula "
+        "blocks where useful."
+    ).replace("{{CHAPTER}}", chapter.name).replace("{{UNIT}}", unit_name).replace(
+        "{{COURSE}}", course_name
+    ).replace("{{TOPICS}}", topic_outline)
+
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": f"Chapter description: {chapter.description or 'none'}"},
+    ]
+    content = ""
+    for _ in range(2):
+        content = ""
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=3000):
+            data = json.loads(chunk)
+            content += data.get("content", "")
+        if content.strip():
+            break
+
+    if not content.strip():
+        raise HTTPException(status_code=502, detail="AI unavailable — try again shortly (rate limit?)")
+
+    chapter.material = content
+    await db.commit()
+    return {"chapter_id": str(chapter.id), "content": content, "cached": False}
+
+
 @router.post("/units/{unit_id}/assessment")
 async def generate_unit_assessment(
     unit_id: uuid.UUID,
