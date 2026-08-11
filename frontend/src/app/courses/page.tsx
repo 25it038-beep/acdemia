@@ -51,6 +51,16 @@ export default function CoursesPage() {
     setGenerating((g) => ({ ...g, [id]: true }));
     try {
       await api.generateSubjectWorkflow(id);
+      // The backend builds the workflow in the background — poll until the
+      // units actually appear so the button reflects real progress.
+      const deadline = Date.now() + 5 * 60 * 1000;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const data = await api.getSubjects();
+        setSubjects(data);
+        const s = data.find((x: any) => x.id === id);
+        if (s && s.unit_count > 0) break;
+      }
     } catch {
       // ignore
     } finally {

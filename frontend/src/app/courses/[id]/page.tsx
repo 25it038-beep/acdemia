@@ -1,19 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Subject, Unit, Chapter } from '@/types';
+import { Subject } from '@/types';
 import { motion } from 'framer-motion';
-import { BookOpen, ChevronDown, ChevronRight, Plus, Clock, BarChart3, Network, Map } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronRight, Clock, BarChart3, Network, Map, ClipboardList, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function CourseDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [subject, setSubject] = useState<Subject | null>(null);
   const [units, setUnits] = useState<any[]>([]);
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
   const [chapters, setChapters] = useState<Record<string, any[]>>({});
+  const [openChapter, setOpenChapter] = useState<string | null>(null);
+  const [topics, setTopics] = useState<Record<string, any[]>>({});
+  const [loadingTopics, setLoadingTopics] = useState<Record<string, boolean>>({});
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [quizLoading, setQuizLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) loadData();
@@ -45,6 +51,61 @@ export default function CourseDetailPage() {
       loadChapters(unitId);
     }
     setExpandedUnits(newExpanded);
+  };
+
+  const toggleChapter = async (chapter: any) => {
+    if (openChapter === chapter.id) {
+      setOpenChapter(null);
+      return;
+    }
+    setOpenChapter(chapter.id);
+    if (!topics[chapter.id]) {
+      setLoadingTopics((t) => ({ ...t, [chapter.id]: true }));
+      try {
+        const data = await api.getTopics(params.id as string, chapter.unit_id, chapter.id);
+        setTopics((prev) => ({ ...prev, [chapter.id]: data }));
+      } finally {
+        setLoadingTopics((t) => ({ ...t, [chapter.id]: false }));
+      }
+    }
+  };
+
+  const toggleTopic = (topicId: string) => {
+    const newExpanded = new Set(expandedTopics);
+    if (newExpanded.has(topicId)) newExpanded.delete(topicId);
+    else newExpanded.add(topicId);
+    setExpandedTopics(newExpanded);
+  };
+
+  const startChapterAssessment = async (chapter: any) => {
+    setQuizLoading(chapter.id);
+    try {
+      const chapterTopics = topics[chapter.id] || [];
+      const res = await api.generateQuiz({
+        subject_id: params.id,
+        topic_id: chapterTopics[0]?.id || null,
+        title: `${chapter.name} Assessment`,
+        question_count: 5,
+        difficulty: 'medium',
+      });
+      router.push(`/quizzes?quiz_id=${res.quiz_id}`);
+    } catch {
+      // ignore
+    } finally {
+      setQuizLoading(null);
+    }
+  };
+
+  const startUnitAssessment = async (unit: any) => {
+    setQuizLoading(unit.id);
+    try {
+      const res = await api.createUnitAssessment(unit.id);
+      router.push(`/quizzes?quiz_id=${res.quiz_id}`);
+    } catch {
+      // ignore
+    } finally {
+      setQuizLoading(null);
+    }
   };
 
   if (loading) {
@@ -82,10 +143,7 @@ export default function CourseDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="btn-secondary flex items-center gap-2 text-sm">
-              <Network className="w-4 h-4" /> Graph
-            </button>
-            <button className="btn-secondary flex items-center gap-2 text-sm">
+            <button className="btn-secondary flex items-center gap-2 text-sm" onClick={() => router.push('/workflow')}>
               <Map className="w-4 h-4" /> Workflow
             </button>
           </div>
@@ -121,7 +179,20 @@ export default function CourseDetailPage() {
                   )}
                 </div>
               </div>
-              <span className="text-xs text-white/30">{unit.chapter_count} chapters</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startUnitAssessment(unit);
+                  }}
+                  disabled={quizLoading === unit.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-300 transition-colors disabled:opacity-50"
+                >
+                  {quizLoading === unit.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardList className="w-3 h-3" />}
+                  Unit Assessment
+                </button>
+                <span className="text-xs text-white/30">{unit.chapter_count} chapters</span>
+              </div>
             </button>
 
             {expandedUnits.has(unit.id) && (
@@ -135,22 +206,106 @@ export default function CourseDetailPage() {
                 ) : (
                   <div className="p-4 space-y-2">
                     {(chapters[unit.id] || []).map((chapter: any) => (
-                      <div key={chapter.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white/80">{chapter.name}</p>
-                          <p className="text-xs text-white/30 mt-0.5">
-                            {chapter.estimated_hours}h · {chapter.difficulty}/5 difficulty
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                              style={{ width: `${chapter.progress * 100}%` }}
-                            />
+                      <div key={chapter.id} className="rounded-lg bg-white/5">
+                        <button
+                          onClick={() => toggleChapter(chapter)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          {openChapter === chapter.id ? (
+                            <ChevronDown className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm text-white/80">{chapter.name}</p>
+                            <p className="text-xs text-white/30 mt-0.5">
+                              {chapter.estimated_hours}h · {chapter.difficulty}/5 difficulty
+                            </p>
                           </div>
-                          <span className="text-xs text-white/40">{Math.round(chapter.progress * 100)}%</span>
-                        </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                                style={{ width: `${chapter.progress * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-white/40">{Math.round(chapter.progress * 100)}%</span>
+                          </div>
+                        </button>
+
+                        {openChapter === chapter.id && (
+                          <div className="border-t border-white/5 p-4 space-y-3">
+                            {loadingTopics[chapter.id] ? (
+                              <div className="flex items-center justify-center py-6">
+                                <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                              </div>
+                            ) : (topics[chapter.id] || []).length === 0 ? (
+                              <p className="text-sm text-white/30 text-center py-4">No topics in this chapter yet</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {(topics[chapter.id] || []).map((topic: any) => (
+                                  <div key={topic.id} className="rounded-lg bg-white/5 overflow-hidden">
+                                    <button
+                                      onClick={() => toggleTopic(topic.id)}
+                                      className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-white/10 transition-colors"
+                                    >
+                                      {expandedTopics.has(topic.id) ? (
+                                        <ChevronDown className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-white/90">{topic.name}</p>
+                                        {topic.summary && !expandedTopics.has(topic.id) && (
+                                          <p className="text-xs text-white/40 mt-0.5 line-clamp-1">{topic.summary}</p>
+                                        )}
+                                      </div>
+                                      {topic.difficulty && (
+                                        <span className="text-[10px] text-white/30 flex-shrink-0">
+                                          difficulty {topic.difficulty}/5
+                                        </span>
+                                      )}
+                                    </button>
+                                    {expandedTopics.has(topic.id) && (
+                                      <div className="px-3 pb-3">
+                                        {topic.content && (
+                                          <div className="text-sm text-white/60 leading-relaxed">
+                                            {topic.content.split('\n').map((line: string, i: number) =>
+                                              line.trim() ? <p key={i} className="mb-2">{line}</p> : null
+                                            )}
+                                          </div>
+                                        )}
+                                        {topic.formula && (
+                                          <div className="mt-2 rounded-lg bg-indigo-500/10 border border-indigo-400/20 p-3 font-mono text-xs text-indigo-200">
+                                            {topic.formula}
+                                          </div>
+                                        )}
+                                        {topic.code_example && (
+                                          <pre className="mt-2 rounded-lg bg-black/40 border border-white/10 p-3 text-xs text-emerald-200 overflow-x-auto">
+                                            {topic.code_example}
+                                          </pre>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-3 pt-1">
+                              <button
+                                onClick={() => startChapterAssessment(chapter)}
+                                disabled={quizLoading === chapter.id}
+                                className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-300 font-medium transition-colors disabled:opacity-50"
+                              >
+                                {quizLoading === chapter.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                Take Chapter Assessment
+                              </button>
+                              <span className="text-[11px] text-white/30 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Progress updates as you score
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
