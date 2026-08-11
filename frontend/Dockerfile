@@ -7,6 +7,10 @@ RUN npm install --frozen-lockfile
 
 FROM node:20-alpine AS builder
 WORKDIR /app
+# Render passes service env vars as build args; declare + export so `next build`
+# bakes NEXT_PUBLIC_API_URL into the rewrite manifest and client bundle.
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
