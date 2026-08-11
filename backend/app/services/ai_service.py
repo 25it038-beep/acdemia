@@ -49,7 +49,7 @@ FALLBACK_MODELS: Dict[str, Dict[str, str]] = {
 FALLBACK_ORDER = ["groq", "nvidia", "openrouter", "openai", "cloudflare", "gemini"]
 
 # Cooldown (seconds) before retrying a provider that failed
-PROVIDER_COOLDOWN = 300
+PROVIDER_COOLDOWN = 30
 
 
 def _strip_think(text: str) -> str:
@@ -288,11 +288,16 @@ class AIProvider:
     ) -> AsyncGenerator[str, None]:
         providers = self._live_providers()
         if not providers:
-            yield json.dumps({
-                "role": "assistant",
-                "content": "I'm running in offline mode. Please configure an AI provider API key to enable AI features."
-            })
-            return
+            if self._providers:
+                # Providers exist but all are in cooldown — retry the primary now
+                # (transient failures like rate limits may have recovered)
+                providers = [self._providers[0]]
+            else:
+                yield json.dumps({
+                    "role": "assistant",
+                    "content": "I'm running in offline mode. Please configure an AI provider API key to enable AI features."
+                })
+                return
 
         errors = []
         for provider in providers:
