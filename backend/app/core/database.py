@@ -79,8 +79,29 @@ def _migrate_sqlite(sync_conn):
         pass
 
 
+def _migrate_pg(sync_conn):
+    """Add columns introduced after the initial schema to existing Postgres DBs.
+    `create_all` only creates missing tables, never missing columns."""
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS education_level VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS domain VARCHAR(255)",
+        "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS subject_id UUID",
+        "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS unit_id UUID",
+        "ALTER TABLE units ADD COLUMN IF NOT EXISTS exploration TEXT",
+        "ALTER TABLE files ADD COLUMN IF NOT EXISTS ml_analysis JSONB",
+    ]
+    for stmt in statements:
+        try:
+            sync_conn.exec_driver_sql(stmt)
+        except Exception:
+            pass
+
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         if is_sqlite:
             await conn.run_sync(_migrate_sqlite)
+        else:
+            await conn.run_sync(_migrate_pg)
