@@ -5,8 +5,9 @@ import { useDropzone } from 'react-dropzone';
 import { api } from '@/lib/api';
 import { FileUpload } from '@/types';
 import { motion } from 'framer-motion';
-import { Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Search, Trash2, Map, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Search, Trash2, Map, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import Link from 'next/link';
+import FileAnalysisPanel from '@/components/FileAnalysisPanel';
 
 const fileIcons: Record<string, string> = {
   pdf: '📄',
@@ -47,6 +48,7 @@ export default function LibraryPage() {
   }, []);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [mlExpanded, setMlExpanded] = useState<Record<string, boolean>>({});
 
   const loadData = async () => {
     try {
@@ -219,6 +221,20 @@ export default function LibraryPage() {
                   <Map className="w-3.5 h-3.5" />
                   View Workflow
                 </Link>
+              )}
+
+              {file.status === 'completed' && (
+                <div className="mt-3 border-t border-white/5 pt-2">
+                  <button
+                    onClick={() => setMlExpanded((p) => ({ ...p, [file.id]: !p[file.id] }))}
+                    className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
+                  >
+                    {mlExpanded[file.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    <Brain className="w-3.5 h-3.5" />
+                    ML Analysis
+                  </button>
+                  {mlExpanded[file.id] && <FileAnalysisPanel fileId={file.id} />}
+                </div>
               )}
             </motion.div>
           ))}

@@ -117,6 +117,19 @@ class ApiClient {
     return res.data;
   }
 
+  // Machine Learning
+  async getFileAnalysis(fileId: string) {
+    const res = await this.client.get(`/api/ml/analyze/${fileId}`);
+    return res.data;
+  }
+
+  async getSimilarFiles(fileId: string, limit: number = 5) {
+    const res = await this.client.get(`/api/ml/similar/${fileId}`, {
+      params: { limit },
+    });
+    return res.data;
+  }
+
   // Tutor
   async chat(data: ChatMessage) {
     const res = await this.client.post('/api/tutor/chat', data, { timeout: 300000 });

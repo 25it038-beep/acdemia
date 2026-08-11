@@ -14,3 +14,4 @@ uploads/
 .DS_Store
 coverage/
 .pytest_cache/frontend/dev-server*.log
+backend/backend-server.log

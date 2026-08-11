@@ -57,6 +57,28 @@ class FileProcessor:
                 await db.execute(stmt)
                 await db.commit()
 
+                # Step 2b: Machine-learning analysis (keywords, subject
+                # classification, readability, difficulty) — pure offline NLP
+                ml_result = {}
+                if extracted_text and extracted_text.strip():
+                    try:
+                        from app.services.ml_service import analyze_document
+                        ml_result = analyze_document(
+                            extracted_text,
+                            corpus=[extracted_text],
+                            keyword_count=10,
+                        )
+                        stmt = (
+                            update(File)
+                            .where(File.id == file_id)
+                            .values(ml_analysis=ml_result)
+                        )
+                        await db.execute(stmt)
+                        await db.commit()
+                    except Exception as mle:
+                        logger.warning(f"ML analysis failed for {file_id}: {mle}")
+                        await db.rollback()
+
                 # Step 3: Build the course workflow from the content (fast path —
                 # users see units/chapters right away)
                 await self._auto_organize(db, file_id, extracted_text)

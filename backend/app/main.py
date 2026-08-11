@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, files, subjects, tutor, learning, projects, notifications, progress
+from app.api import auth, files, subjects, tutor, learning, projects, notifications, progress, ml
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ app.include_router(learning.router)
 app.include_router(projects.router)
 app.include_router(notifications.router)
 app.include_router(progress.router)
+app.include_router(ml.router)
 
 
 @app.exception_handler(Exception)

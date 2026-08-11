@@ -193,3 +193,51 @@ export interface ChatResponse {
   message: string;
   metadata?: Record<string, unknown>;
 }
+
+export interface KeywordItem {
+  keyword: string;
+  score: number;
+  frequency: number;
+}
+
+export interface SubjectMatch {
+  subject: string;
+  score: number;
+  matches: number;
+}
+
+export interface FileAnalysis {
+  file_id: string;
+  filename: string;
+  file_type: string;
+  status?: string;
+  statistics?: {
+    word_count: number;
+    sentence_count: number;
+    unique_words: number;
+    vocabulary_richness: number;
+    estimated_reading_minutes: number;
+    average_words_per_sentence: number;
+  };
+  readability?: {
+    flesch_reading_ease: number;
+    flesch_kincaid_grade: number;
+    automated_readability_index: number;
+  };
+  difficulty?: {
+    difficulty: number;
+    difficulty_label: string;
+    readability_grade: number;
+  };
+  keywords?: KeywordItem[];
+  subject_matches?: SubjectMatch[];
+}
+
+export interface SimilarFile {
+  file_id: string;
+  title: string;
+  similarity: number;
+  file_type?: string;
+  pages?: number;
+  subject?: string;
+}

@@ -377,3 +377,36 @@ class SummaryResponse(BaseModel):
     content: str
     summary_type: str
     format: str
+
+
+class KeywordItem(BaseModel):
+    keyword: str
+    score: float
+    frequency: int
+
+
+class SubjectMatch(BaseModel):
+    subject: str
+    score: float
+    matches: int
+
+
+class MLAnalysisResponse(BaseModel):
+    file_id: UUID
+    filename: str
+    file_type: str
+    status: Optional[str] = None
+    statistics: Optional[dict] = None
+    readability: Optional[dict] = None
+    difficulty: Optional[dict] = None
+    keywords: List[KeywordItem] = []
+    subject_matches: List[SubjectMatch] = []
+
+
+class SimilarFileResponse(BaseModel):
+    file_id: UUID
+    title: str
+    similarity: float
+    file_type: Optional[str] = None
+    pages: Optional[int] = None
+    subject: Optional[str] = None

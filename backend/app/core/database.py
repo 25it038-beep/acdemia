@@ -71,6 +71,12 @@ def _migrate_sqlite(sync_conn):
             sync_conn.exec_driver_sql("ALTER TABLE units ADD COLUMN exploration TEXT")
     except Exception:
         pass
+    try:
+        existing = {row[1] for row in sync_conn.exec_driver_sql("PRAGMA table_info(files)").fetchall()}
+        if "ml_analysis" not in existing:
+            sync_conn.exec_driver_sql("ALTER TABLE files ADD COLUMN ml_analysis JSON")
+    except Exception:
+        pass
 
 
 async def init_db():

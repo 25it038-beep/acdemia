@@ -249,6 +249,7 @@ class File(Base):
     pages = Column(Integer, default=0)
     chunks = Column(Integer, default=0)
     extracted_text = Column(Text, nullable=True)
+    ml_analysis = Column(JSON, default=dict)
     extra_metadata = Column(JSON, default=dict)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow)
