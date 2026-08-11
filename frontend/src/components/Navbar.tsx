@@ -20,7 +20,7 @@ export default function Navbar() {
   const avatarUrl = user?.imageUrl;
 
   return (
-    <header className="h-16 glass border-b border-white/10 flex items-center justify-between px-6">
+    <header className="h-16 glass border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-50">
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 flex-shrink-0" title="Academia AI">
           <img src="/logo.web.png" alt="Academia AI" className="h-8 w-auto object-contain" />

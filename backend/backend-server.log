@@ -1,167 +1,109 @@
-INFO:     Started server process [8848]
+INFO:     Started server process [13668]
 INFO:     Waiting for application startup.
-2026-08-11 17:35:59,701 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:35:59,701 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("users")
-2026-08-11 17:35:59,701 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,702 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("subjects")
-2026-08-11 17:35:59,702 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,703 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("units")
-2026-08-11 17:35:59,703 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,703 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chapters")
-2026-08-11 17:35:59,703 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,704 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("topics")
-2026-08-11 17:35:59,704 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,705 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("concepts")
-2026-08-11 17:35:59,705 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,705 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("knowledge_relations")
-2026-08-11 17:35:59,705 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,706 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("projects")
-2026-08-11 17:35:59,706 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,706 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("tasks")
-2026-08-11 17:35:59,706 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,707 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("files")
-2026-08-11 17:35:59,707 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,707 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chunks")
-2026-08-11 17:35:59,707 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,708 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("learning_progress")
-2026-08-11 17:35:59,708 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,708 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("study_sessions")
-2026-08-11 17:35:59,708 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,709 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("quizzes")
-2026-08-11 17:35:59,709 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,709 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("questions")
-2026-08-11 17:35:59,709 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,710 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("quiz_responses")
-2026-08-11 17:35:59,710 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,710 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("memories")
-2026-08-11 17:35:59,710 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,711 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("flashcards")
-2026-08-11 17:35:59,711 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,712 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("study_plans")
-2026-08-11 17:35:59,712 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,712 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chat_history")
-2026-08-11 17:35:59,712 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,713 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("whiteboards")
-2026-08-11 17:35:59,713 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,714 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("notifications")
-2026-08-11 17:35:59,714 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,714 INFO sqlalchemy.engine.Engine PRAGMA table_info(users)
-2026-08-11 17:35:59,714 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,715 INFO sqlalchemy.engine.Engine PRAGMA table_info(quizzes)
-2026-08-11 17:35:59,715 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,715 INFO sqlalchemy.engine.Engine PRAGMA table_info(units)
-2026-08-11 17:35:59,715 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,716 INFO sqlalchemy.engine.Engine PRAGMA table_info(files)
-2026-08-11 17:35:59,716 INFO sqlalchemy.engine.Engine [raw sql] ()
-2026-08-11 17:35:59,716 INFO sqlalchemy.engine.Engine COMMIT
+2026-08-11 17:49:53,443 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:49:53,443 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("users")
+2026-08-11 17:49:53,443 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,445 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("subjects")
+2026-08-11 17:49:53,445 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,445 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("units")
+2026-08-11 17:49:53,445 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,447 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chapters")
+2026-08-11 17:49:53,447 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,447 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("topics")
+2026-08-11 17:49:53,447 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,448 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("concepts")
+2026-08-11 17:49:53,448 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,449 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("knowledge_relations")
+2026-08-11 17:49:53,449 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,450 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("projects")
+2026-08-11 17:49:53,450 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,450 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("tasks")
+2026-08-11 17:49:53,450 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,451 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("files")
+2026-08-11 17:49:53,451 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,452 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chunks")
+2026-08-11 17:49:53,452 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,452 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("learning_progress")
+2026-08-11 17:49:53,452 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,453 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("study_sessions")
+2026-08-11 17:49:53,453 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,453 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("quizzes")
+2026-08-11 17:49:53,454 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,454 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("questions")
+2026-08-11 17:49:53,454 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,455 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("quiz_responses")
+2026-08-11 17:49:53,455 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,455 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("memories")
+2026-08-11 17:49:53,455 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,456 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("flashcards")
+2026-08-11 17:49:53,457 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,457 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("study_plans")
+2026-08-11 17:49:53,457 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,458 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("chat_history")
+2026-08-11 17:49:53,458 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,459 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("whiteboards")
+2026-08-11 17:49:53,459 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,459 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("notifications")
+2026-08-11 17:49:53,459 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,460 INFO sqlalchemy.engine.Engine PRAGMA table_info(users)
+2026-08-11 17:49:53,460 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,461 INFO sqlalchemy.engine.Engine PRAGMA table_info(quizzes)
+2026-08-11 17:49:53,461 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,461 INFO sqlalchemy.engine.Engine PRAGMA table_info(units)
+2026-08-11 17:49:53,461 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,462 INFO sqlalchemy.engine.Engine PRAGMA table_info(files)
+2026-08-11 17:49:53,462 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-08-11 17:49:53,463 INFO sqlalchemy.engine.Engine COMMIT
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-2026-08-11 17:36:31,180 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:36:31,213 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
-FROM users 
-WHERE users.email = ?
-2026-08-11 17:36:31,214 INFO sqlalchemy.engine.Engine [generated in 0.00024s] ('mltest@test.com',)
-INFO:     127.0.0.1:40870 - "POST /api/auth/login HTTP/1.1" 200 OK
-2026-08-11 17:36:31,426 INFO sqlalchemy.engine.Engine ROLLBACK
-2026-08-11 17:36:31,441 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:36:31,442 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
+2026-08-11 17:49:58,442 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:49:58,485 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
 FROM users 
 WHERE users.username = ?
-2026-08-11 17:36:31,442 INFO sqlalchemy.engine.Engine [generated in 0.00014s] ('demo',)
-2026-08-11 17:36:31,444 INFO sqlalchemy.engine.Engine SELECT files.id, files.user_id, files.subject_id, files.project_id, files.original_filename, files.stored_filename, files.file_type, files.file_size, files.mime_type, files.minio_path, files.status, files.pages, files.chunks, files.extracted_text, files.ml_analysis, files.extra_metadata, files.error_message, files.created_at, files.updated_at 
-FROM files 
-WHERE files.id = ? AND files.user_id = ?
-2026-08-11 17:36:31,444 INFO sqlalchemy.engine.Engine [generated in 0.00013s] ('63270c8ceeae4859bf305d6f83a20c9f', '50b5712e5c4145f38199a7707a232ea5')
-2026-08-11 17:36:31,448 INFO sqlalchemy.engine.Engine SELECT files.id, files.user_id, files.subject_id, files.project_id, files.original_filename, files.stored_filename, files.file_type, files.file_size, files.mime_type, files.minio_path, files.status, files.pages, files.chunks, files.extracted_text, files.ml_analysis, files.extra_metadata, files.error_message, files.created_at, files.updated_at 
-FROM files 
-WHERE files.user_id = ? AND files.id != ? AND files.status = ? AND files.extracted_text IS NOT NULL
-2026-08-11 17:36:31,448 INFO sqlalchemy.engine.Engine [generated in 0.00019s] ('50b5712e5c4145f38199a7707a232ea5', '63270c8ceeae4859bf305d6f83a20c9f', 'completed')
-INFO:     127.0.0.1:40870 - "GET /api/ml/similar/63270c8c-eeae-4859-bf30-5d6f83a20c9f HTTP/1.1" 200 OK
-2026-08-11 17:36:31,449 INFO sqlalchemy.engine.Engine ROLLBACK
-2026-08-11 17:36:33,889 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:36:33,890 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
+2026-08-11 17:49:58,485 INFO sqlalchemy.engine.Engine [generated in 0.00022s] ('demo',)
+2026-08-11 17:49:58,488 INFO sqlalchemy.engine.Engine UPDATE users SET full_name=?, updated_at=? WHERE users.id = ?
+2026-08-11 17:49:58,488 INFO sqlalchemy.engine.Engine [generated in 0.00020s] ('Test User', '2026-08-11 12:19:58.488429', '50b5712e5c4145f38199a7707a232ea5')
+2026-08-11 17:49:58,490 INFO sqlalchemy.engine.Engine COMMIT
+2026-08-11 17:49:58,495 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:49:58,496 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = ?
+2026-08-11 17:49:58,496 INFO sqlalchemy.engine.Engine [generated in 0.00015s] ('50b5712e5c4145f38199a7707a232ea5',)
+INFO:     127.0.0.1:27991 - "PUT /api/auth/me HTTP/1.1" 200 OK
+2026-08-11 17:49:58,498 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-08-11 17:50:02,618 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:50:02,619 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
 FROM users 
 WHERE users.username = ?
-2026-08-11 17:36:33,890 INFO sqlalchemy.engine.Engine [cached since 2.448s ago] ('demo',)
-2026-08-11 17:36:33,892 INFO sqlalchemy.engine.Engine SELECT units.id, units.subject_id, units.name, units.description, units.exploration, units."order", units.created_at, subjects.name AS name_1 
-FROM units JOIN subjects ON units.subject_id = subjects.id 
-WHERE units.id = ? AND subjects.user_id = ?
-2026-08-11 17:36:33,892 INFO sqlalchemy.engine.Engine [generated in 0.00014s] ('34f82d1922f247849a09cde39578786f', '50b5712e5c4145f38199a7707a232ea5')
-2026-08-11 17:36:33,894 INFO sqlalchemy.engine.Engine SELECT chapters.id, chapters.unit_id, chapters.name, chapters.description, chapters."order", chapters.estimated_hours, chapters.difficulty, chapters.created_at 
-FROM chapters 
-WHERE chapters.unit_id = ? ORDER BY chapters."order"
-2026-08-11 17:36:33,894 INFO sqlalchemy.engine.Engine [generated in 0.00010s] ('34f82d1922f247849a09cde39578786f',)
-2026-08-11 17:36:33,896 INFO sqlalchemy.engine.Engine SELECT topics.id, topics.chapter_id, topics.name, topics.content, topics.summary, topics."order", topics.difficulty, topics.importance, topics.prerequisites, topics.tags, topics.created_at 
-FROM topics JOIN chapters ON chapters.id = topics.chapter_id 
-WHERE chapters.unit_id = ? ORDER BY chapters."order"
-2026-08-11 17:36:33,896 INFO sqlalchemy.engine.Engine [generated in 0.00014s] ('34f82d1922f247849a09cde39578786f',)
-2026-08-11 17:36:39,938 INFO sqlalchemy.engine.Engine UPDATE units SET exploration=? WHERE units.id = ?
-2026-08-11 17:36:39,938 INFO sqlalchemy.engine.Engine [generated in 0.00025s] ('**Machine Learning Fundamentals**\n=====================================\n\n**Introduction to Machine Learning**\n----------------------------------- ... (5548 characters truncated) ... y tips and avoiding common mistakes, you can gain a deep understanding of machine learning and linear regression and apply it to real-world problems.', '34f82d1922f247849a09cde39578786f')
-2026-08-11 17:36:39,941 INFO sqlalchemy.engine.Engine COMMIT
-INFO:     127.0.0.1:40873 - "POST /api/units/34f82d19-22f2-4784-9a09-cde39578786f/explore HTTP/1.1" 200 OK
-2026-08-11 17:36:50,763 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:36:50,763 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
+2026-08-11 17:50:02,619 INFO sqlalchemy.engine.Engine [cached since 4.133s ago] ('demo',)
+2026-08-11 17:50:02,621 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.title, notifications.message, notifications.notification_type, notifications.is_read, notifications.action_url, notifications.created_at 
+FROM notifications 
+WHERE notifications.user_id = ? ORDER BY notifications.created_at DESC
+ LIMIT ? OFFSET ?
+2026-08-11 17:50:02,621 INFO sqlalchemy.engine.Engine [generated in 0.00012s] ('50b5712e5c4145f38199a7707a232ea5', 50, 0)
+INFO:     127.0.0.1:37736 - "GET /api/notifications HTTP/1.1" 200 OK
+2026-08-11 17:50:02,623 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-08-11 17:50:17,308 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:50:17,309 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
 FROM users 
 WHERE users.username = ?
-2026-08-11 17:36:50,763 INFO sqlalchemy.engine.Engine [cached since 19.32s ago] ('demo',)
-2026-08-11 17:36:50,765 INFO sqlalchemy.engine.Engine SELECT units.id, units.subject_id, units.name, units.description, units.exploration, units."order", units.created_at 
-FROM units JOIN subjects ON units.subject_id = subjects.id 
-WHERE units.id = ? AND subjects.user_id = ?
-2026-08-11 17:36:50,765 INFO sqlalchemy.engine.Engine [generated in 0.00015s] ('34f82d1922f247849a09cde39578786f', '50b5712e5c4145f38199a7707a232ea5')
-2026-08-11 17:36:50,767 INFO sqlalchemy.engine.Engine SELECT topics.id, topics.chapter_id, topics.name, topics.content, topics.summary, topics."order", topics.difficulty, topics.importance, topics.prerequisites, topics.tags, topics.created_at 
-FROM topics JOIN chapters ON chapters.id = topics.chapter_id 
-WHERE chapters.unit_id = ? ORDER BY chapters."order"
-2026-08-11 17:36:50,767 INFO sqlalchemy.engine.Engine [cached since 16.87s ago] ('34f82d1922f247849a09cde39578786f',)
-2026-08-11 17:36:54,491 INFO sqlalchemy.engine.Engine INSERT INTO quizzes (id, user_id, subject_id, unit_id, topic_id, title, quiz_type, difficulty, time_limit_minutes, total_questions, score, passed, completed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-2026-08-11 17:36:54,491 INFO sqlalchemy.engine.Engine [generated in 0.00025s] ('837a6b526c7847f9a48538e1c5c4e380', '50b5712e5c4145f38199a7707a232ea5', 'd2bc02db55b24a77bfe00bc7d74762ea', '34f82d1922f247849a09cde39578786f', None, 'Machine Learning Fundamentals — Assessment', 'mcq', 'medium', None, 5, None, None, None, '2026-08-11 12:06:54.490999')
-2026-08-11 17:36:54,495 INFO sqlalchemy.engine.Engine COMMIT
-2026-08-11 17:36:54,499 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:36:54,501 INFO sqlalchemy.engine.Engine SELECT quizzes.id, quizzes.user_id, quizzes.subject_id, quizzes.unit_id, quizzes.topic_id, quizzes.title, quizzes.quiz_type, quizzes.difficulty, quizzes.time_limit_minutes, quizzes.total_questions, quizzes.score, quizzes.passed, quizzes.completed_at, quizzes.created_at 
-FROM quizzes 
-WHERE quizzes.id = ?
-2026-08-11 17:36:54,501 INFO sqlalchemy.engine.Engine [generated in 0.00021s] ('837a6b526c7847f9a48538e1c5c4e380',)
-2026-08-11 17:36:54,504 INFO sqlalchemy.engine.Engine INSERT INTO questions (id, quiz_id, topic_id, question_text, question_type, options, correct_answer, explanation, difficulty, marks, tags, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-2026-08-11 17:36:54,504 INFO sqlalchemy.engine.Engine [generated in 0.00031s (insertmanyvalues) 1/1 (unordered)] ('ff87ede80f1b47539ac4df1d34ddd3c7', '837a6b526c7847f9a48538e1c5c4e380', None, 'What is the primary characteristic of Machine Learning?', 'MCQ', '["A subset of artificial intelligence that enables systems to learn from explicit programming", "A learning approach that uses labeled datasets to tr ... (95 characters truncated) ... ns and structures within unlabeled data", "A subset of artificial intelligence that enables systems to learn from data without explicit programming"]', '3', 'Machine learning is a subset of artificial intelligence that enables systems to learn from data without explicit programming.', 3, 2, '[]', '2026-08-11 12:06:54.504353', '8be7ad8c77de4070aa85b0d9515ae072', '837a6b526c7847f9a48538e1c5c4e380', None, 'What type of learning approach uses labeled datasets to train models for prediction and classification tasks?', 'MCQ', '["Supervised Learning", "Unsupervised Learning", "Regression Analysis", "Gradient Descent Optimization"]', '0', 'Supervised learning is a learning approach that uses labeled datasets to train models for prediction and classification tasks.', 3, 2, '[]', '2026-08-11 12:06:54.504359', '9ab0280aa74544988cfd323aaa673544', '837a6b526c7847f9a48538e1c5c4e380', None, 'What is the primary goal of Unsupervised Learning?', 'MCQ', '["To model the mathematical relationship between a dependent variable and one or more independent variables", "To determine the optimal linear relati ... (28 characters truncated) ...  of squared errors", "To identify hidden patterns and structures within unlabeled data", "To optimize model parameters using an iterative algorithm"]', '2', 'Unsupervised learning is a technique that identifies hidden patterns and structures within unlabeled data.', 3, 2, '[]', '2026-08-11 12:06:54.504363', 'b0c523cbf8df4b8da4f8ee3e54315df3', '837a6b526c7847f9a48538e1c5c4e380', None, 'What is the primary goal of Line of Best Fit?', 'MCQ', '["To optimize model parameters using an iterative algorithm", "To identify hidden patterns and structures within unlabeled data", "To model the mathe ... (28 characters truncated) ...  a dependent variable and one or more independent variables", "To determine the optimal linear relationship by minimizing the sum of squared errors"]', '3', 'The line of best fit determines the optimal linear relationship by minimizing the sum of squared errors.', 3, 2, '[]', '2026-08-11 12:06:54.504365', 'cfc1a7f3d8a24da7b1ea2fde3a24a221', '837a6b526c7847f9a48538e1c5c4e380', None, 'What is the primary goal of Gradient Descent Optimization?', 'MCQ', '["To determine the optimal linear relationship by minimizing the sum of squared errors", "To identify hidden patterns and structures within unlabeled ... (28 characters truncated) ... atical relationship between a dependent variable and one or more independent variables", "To optimize model parameters using an iterative algorithm"]', '3', 'Gradient descent optimization is an iterative algorithm used to minimize the cost function and optimize model parameters.', 3, 2, '[]', '2026-08-11 12:06:54.504369')
-2026-08-11 17:36:54,506 INFO sqlalchemy.engine.Engine COMMIT
-INFO:     127.0.0.1:62371 - "POST /api/units/34f82d19-22f2-4784-9a09-cde39578786f/assessment HTTP/1.1" 200 OK
-2026-08-11 17:37:16,626 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:37:16,626 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
-FROM users 
-WHERE users.email = ?
-2026-08-11 17:37:16,626 INFO sqlalchemy.engine.Engine [cached since 45.41s ago] ('mltest@test.com',)
-INFO:     127.0.0.1:28851 - "POST /api/auth/login HTTP/1.1" 200 OK
-2026-08-11 17:37:16,842 INFO sqlalchemy.engine.Engine ROLLBACK
-2026-08-11 17:37:16,859 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:37:16,859 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
+2026-08-11 17:50:17,309 INFO sqlalchemy.engine.Engine [cached since 18.82s ago] ('demo',)
+2026-08-11 17:50:17,310 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.title, notifications.message, notifications.notification_type, notifications.is_read, notifications.action_url, notifications.created_at 
+FROM notifications 
+WHERE notifications.user_id = ? ORDER BY notifications.created_at DESC
+ LIMIT ? OFFSET ?
+2026-08-11 17:50:17,310 INFO sqlalchemy.engine.Engine [cached since 14.69s ago] ('50b5712e5c4145f38199a7707a232ea5', 50, 0)
+INFO:     127.0.0.1:53810 - "GET /api/notifications HTTP/1.1" 200 OK
+2026-08-11 17:50:17,312 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-08-11 17:50:32,616 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-08-11 17:50:32,616 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
 FROM users 
 WHERE users.username = ?
-2026-08-11 17:37:16,859 INFO sqlalchemy.engine.Engine [cached since 45.42s ago] ('demo',)
-2026-08-11 17:37:16,861 INFO sqlalchemy.engine.Engine SELECT files.id, files.user_id, files.subject_id, files.project_id, files.original_filename, files.stored_filename, files.file_type, files.file_size, files.mime_type, files.minio_path, files.status, files.pages, files.chunks, files.extracted_text, files.ml_analysis, files.extra_metadata, files.error_message, files.created_at, files.updated_at 
-FROM files 
-WHERE files.id = ? AND files.user_id = ?
-2026-08-11 17:37:16,861 INFO sqlalchemy.engine.Engine [cached since 45.42s ago] ('d01d1650c56c4397a5107f23aa881479', '50b5712e5c4145f38199a7707a232ea5')
-2026-08-11 17:37:16,864 INFO sqlalchemy.engine.Engine SELECT chunks.id AS chunks_id, chunks.file_id AS chunks_file_id, chunks.content AS chunks_content, chunks.chunk_index AS chunks_chunk_index, chunks.chunk_type AS chunks_chunk_type, chunks.embedding_id AS chunks_embedding_id, chunks.extra_metadata AS chunks_extra_metadata, chunks.created_at AS chunks_created_at 
-FROM chunks 
-WHERE ? = chunks.file_id
-2026-08-11 17:37:16,864 INFO sqlalchemy.engine.Engine [generated in 0.00022s] ('d01d1650c56c4397a5107f23aa881479',)
-2026-08-11 17:37:16,867 INFO sqlalchemy.engine.Engine DELETE FROM files WHERE files.id = ?
-2026-08-11 17:37:16,867 INFO sqlalchemy.engine.Engine [generated in 0.00017s] ('d01d1650c56c4397a5107f23aa881479',)
-2026-08-11 17:37:16,870 INFO sqlalchemy.engine.Engine COMMIT
-INFO:     127.0.0.1:28851 - "DELETE /api/files/d01d1650-c56c-4397-a510-7f23aa881479 HTTP/1.1" 200 OK
-2026-08-11 17:37:16,877 INFO sqlalchemy.engine.Engine BEGIN (implicit)
-2026-08-11 17:37:16,878 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.username, users.full_name, users.hashed_password, users.role, users.avatar_url, users.university, users.course, users.semester, users.education_level, users.occupation, users.domain, users.learning_mode, users.preferences, users.is_active, users.is_verified, users.created_at, users.updated_at 
-FROM users 
-WHERE users.username = ?
-2026-08-11 17:37:16,878 INFO sqlalchemy.engine.Engine [cached since 45.44s ago] ('demo',)
-2026-08-11 17:37:16,879 INFO sqlalchemy.engine.Engine SELECT files.id, files.user_id, files.subject_id, files.project_id, files.original_filename, files.stored_filename, files.file_type, files.file_size, files.mime_type, files.minio_path, files.status, files.pages, files.chunks, files.extracted_text, files.ml_analysis, files.extra_metadata, files.error_message, files.created_at, files.updated_at 
-FROM files 
-WHERE files.id = ? AND files.user_id = ?
-2026-08-11 17:37:16,879 INFO sqlalchemy.engine.Engine [cached since 45.43s ago] ('6c90d169fc3a4c639df3b56a7468c3a4', '50b5712e5c4145f38199a7707a232ea5')
-2026-08-11 17:37:16,880 INFO sqlalchemy.engine.Engine SELECT chunks.id AS chunks_id, chunks.file_id AS chunks_file_id, chunks.content AS chunks_content, chunks.chunk_index AS chunks_chunk_index, chunks.chunk_type AS chunks_chunk_type, chunks.embedding_id AS chunks_embedding_id, chunks.extra_metadata AS chunks_extra_metadata, chunks.created_at AS chunks_created_at 
-FROM chunks 
-WHERE ? = chunks.file_id
-2026-08-11 17:37:16,880 INFO sqlalchemy.engine.Engine [cached since 0.01625s ago] ('6c90d169fc3a4c639df3b56a7468c3a4',)
-2026-08-11 17:37:16,883 INFO sqlalchemy.engine.Engine DELETE FROM files WHERE files.id = ?
-2026-08-11 17:37:16,883 INFO sqlalchemy.engine.Engine [cached since 0.01609s ago] ('6c90d169fc3a4c639df3b56a7468c3a4',)
-2026-08-11 17:37:16,885 INFO sqlalchemy.engine.Engine COMMIT
-INFO:     127.0.0.1:28851 - "DELETE /api/files/6c90d169-fc3a-4c63-9df3-b56a7468c3a4 HTTP/1.1" 200 OK
+2026-08-11 17:50:32,616 INFO sqlalchemy.engine.Engine [cached since 34.13s ago] ('demo',)
+2026-08-11 17:50:32,617 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.title, notifications.message, notifications.notification_type, notifications.is_read, notifications.action_url, notifications.created_at 
+FROM notifications 
+WHERE notifications.user_id = ? ORDER BY notifications.created_at DESC
+ LIMIT ? OFFSET ?
+2026-08-11 17:50:32,617 INFO sqlalchemy.engine.Engine [cached since 30s ago] ('50b5712e5c4145f38199a7707a232ea5', 50, 0)
+INFO:     127.0.0.1:18134 - "GET /api/notifications HTTP/1.1" 200 OK
+2026-08-11 17:50:32,619 INFO sqlalchemy.engine.Engine ROLLBACK

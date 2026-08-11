@@ -79,18 +79,18 @@ export default function OnboardingPage() {
     try {
       const fullName = form.full_name.trim();
       const nameParts = fullName.split(/\s+/);
-      await Promise.all([
-        api.updateMe({
-          full_name: fullName,
-          university: form.university.trim() || null,
-          course: form.course.trim() || null,
-          semester: form.semester ? Number(form.semester) : null,
-          education_level: form.education_level || null,
-          occupation: form.occupation.trim() || null,
-          domain: form.domain.trim() || null,
-          learning_mode: form.learning_mode,
-        }),
-        user?.update({
+      const profile = await api.updateMe({
+        full_name: fullName,
+        university: form.university.trim() || null,
+        course: form.course.trim() || null,
+        semester: form.semester ? Number(form.semester) : null,
+        education_level: form.education_level || null,
+        occupation: form.occupation.trim() || null,
+        domain: form.domain.trim() || null,
+        learning_mode: form.learning_mode,
+      });
+      try {
+        await user?.update({
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || '',
           publicMetadata: {
@@ -98,8 +98,16 @@ export default function OnboardingPage() {
             onboarded_at: new Date().toISOString(),
             domain: form.domain.trim() || '',
           },
-        } as any),
-      ]);
+        } as any);
+      } catch {
+        await user?.update({
+          publicMetadata: {
+            onboarded: true,
+            onboarded_at: new Date().toISOString(),
+            domain: form.domain.trim() || '',
+          },
+        } as any).catch(() => {});
+      }
       toast.success('Profile saved! Welcome to Academia AI');
       router.push('/dashboard');
     } catch (e: any) {

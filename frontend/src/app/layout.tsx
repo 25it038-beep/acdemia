@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { Toaster } from 'react-hot-toast'
 import './globals.css'
 import RootLayout from '@/components/Layout'
 import AuthTokenBridge from '@/components/AuthTokenBridge'
@@ -18,6 +19,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body className="antialiased">
         <ClerkProvider>
           <AuthTokenBridge />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: { background: '#1e1b4b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' },
+            }}
+          />
           <header>
             <Show when="signed-out">
               <SignInButton fallbackRedirectUrl="/onboarding" signUpFallbackRedirectUrl="/onboarding" />
