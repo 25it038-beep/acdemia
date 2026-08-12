@@ -231,7 +231,7 @@ class FileProcessor:
                 {"role": "user", "content": text[:4000]},
             ]
             result_text = ""
-            async for chunk in ai_provider.chat(messages, temperature=0.3):
+            async for chunk in ai_provider.chat(messages, temperature=0.3, task="coding"):
                 import json as j
                 data = j.loads(chunk)
                 result_text += data.get("content", "")
@@ -416,7 +416,7 @@ class FileProcessor:
         ]
 
         result_text = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.3):
+        async for chunk in ai_provider.chat(messages, temperature=0.3, task="coding"):
             data = j.loads(chunk)
             result_text += data.get("content", "")
 

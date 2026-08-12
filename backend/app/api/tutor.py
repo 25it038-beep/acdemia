@@ -313,9 +313,9 @@ Rules:
         user_id=user.id, session_id=data.session_id, role="user", content=data.message
     ))
 
-    # Get AI response
+    # Get AI response — stream=True for lower perceived latency
     response_content = ""
-    async for chunk in ai_provider.chat(messages, temperature=0.7, stream=False):
+    async for chunk in ai_provider.chat(messages, temperature=0.7, stream=True):
         chunk_data = json.loads(chunk)
         response_content += chunk_data.get("content", "")
 

@@ -41,17 +41,8 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: Optional[str] = None
     CLERK_ISSUER: str = "https://natural-cat-23.clerk.accounts.dev"
 
-    # AI Provider (primary: NVIDIA, fallbacks)
+    # AI Provider — NVIDIA only
     AI_PROVIDER: str = "nvidia"
-    GROQ_API_KEY: Optional[str] = None
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-    CLOUDFLARE_API_KEY: Optional[str] = None
-    CLOUDFLARE_ACCOUNT_ID: Optional[str] = None
-    CLOUDFLARE_BASE_URL: str = ""
-    OPENAI_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None
-    OPENROUTER_API_KEY: Optional[str] = None
     NVIDIA_API_KEY: Optional[str] = None
     NVIDIA_CODING_API_KEY: Optional[str] = None
     NVIDIA_VISION_API_KEY: Optional[str] = None

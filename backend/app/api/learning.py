@@ -293,7 +293,7 @@ async def explore_unit(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192, task="stem"):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():
@@ -378,7 +378,7 @@ async def generate_chapter_material(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192, task="stem"):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():
@@ -481,7 +481,7 @@ Return as JSON array of daily plans."""
             {"role": "user", "content": prompt},
         ]
         result = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.3):
+        async for chunk in ai_provider.chat(messages, temperature=0.3, task="stem"):
             d = json.loads(chunk)
             result += d.get("content", "")
         try:
