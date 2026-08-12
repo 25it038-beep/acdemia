@@ -26,24 +26,18 @@ services:
         value: nvidia
       - key: NVIDIA_API_KEY
         sync: false
+      - key: NVIDIA_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
       - key: CHAT_MODEL
-        value: meta/llama-3.1-8b-instruct
+        value: nvidia/nemotron-3-super-120b-a12b
       - key: STEM_MODEL
-        value: meta/llama-3.1-8b-instruct
+        value: nvidia/nemotron-3-super-120b-a12b
       - key: CODING_MODEL
-        value: meta/llama-3.1-8b-instruct
+        value: nvidia/nemotron-3-super-120b-a12b
       - key: VISION_MODEL
-        value: meta/llama-3.1-8b-instruct
+        value: nvidia/nemotron-3-super-120b-a12b
       - key: EMBEDDING_MODEL
         value: nvidia/nv-embedqa-e5-v5
-      - key: GROQ_API_KEY
-        sync: false
-      - key: CLOUDFLARE_API_KEY
-        sync: false
-      - key: CLOUDFLARE_ACCOUNT_ID
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
 
       # ── Auto-generated secure secret
       - key: SECRET_KEY

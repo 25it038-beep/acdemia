@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 THINK_BLOCK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
-# NVIDIA is the sole AI provider — no fallbacks
+# NVIDIA is the only supported AI provider for this project.
 NVIDIA_MODELS: Dict[str, str] = {
     "chat": "nvidia/nemotron-3-super-120b-a12b",
     "stem": "nvidia/nemotron-3-super-120b-a12b",
@@ -20,7 +20,7 @@ NVIDIA_MODELS: Dict[str, str] = {
     "embed": "nvidia/nv-embedqa-e5-v5",
 }
 
-# Cooldown (seconds) before retrying a provider that failed
+# Cooldown before retrying a failed NVIDIA request.
 PROVIDER_COOLDOWN = 30
 
 # Shared persistent connection pool for all NVIDIA calls.
@@ -42,7 +42,7 @@ def _get_http_client() -> httpx.AsyncClient:
 
 
 def _strip_think(text: str) -> str:
-    """Remove reasoning blocks some Groq models wrap their answers in."""
+    """Remove reasoning blocks some NVIDIA reasoning models may wrap in <think> tags."""
     if not text:
         return text
     stripped = THINK_BLOCK_RE.sub("", text).strip()
@@ -93,14 +93,16 @@ def _normalize_content(content) -> str:
 
 
 class AIProvider:
-    """Unified AI provider with automatic fallback across configured providers.
+    """NVIDIA-only AI provider wrapper.
 
-    The provider named by ``AI_PROVIDER`` is tried first; if it errors (quota,
-    outage, ...), the request is retried with the next configured provider.
+    The project intentionally supports only NVIDIA. Any non-NVIDIA value is
+    ignored and the runtime stays pinned to NVIDIA.
     """
 
     def __init__(self):
-        self.provider = settings.AI_PROVIDER
+        self.provider = "nvidia"
+        if settings.AI_PROVIDER and settings.AI_PROVIDER.lower() != "nvidia":
+            logger.warning("Non-NVIDIA AI provider configured; forcing NVIDIA-only mode.")
 
         # Ordered list of usable providers: {name, client, models}
         self._providers: List[Dict[str, Any]] = []
@@ -133,7 +135,7 @@ class AIProvider:
         return {"name": "nvidia", "client": client, "models": models}
 
     def _init_providers(self):
-        """Initialize NVIDIA as the sole AI provider."""
+        """Initialize NVIDIA as the sole supported AI provider."""
         cfg = self._provider_config()
         self._providers = [cfg] if cfg else []
         if not self._providers:

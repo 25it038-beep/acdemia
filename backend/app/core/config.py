@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: Optional[str] = None
     CLERK_ISSUER: str = "https://natural-cat-23.clerk.accounts.dev"
 
-    # AI Provider — NVIDIA only
+    # AI Provider — NVIDIA only. No alternate provider is supported.
     AI_PROVIDER: str = "nvidia"
     NVIDIA_API_KEY: Optional[str] = None
     NVIDIA_CODING_API_KEY: Optional[str] = None

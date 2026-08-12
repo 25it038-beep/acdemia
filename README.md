@@ -42,7 +42,7 @@ npm run dev
 - **Knowledge Graph**: Neo4j
 - **File Storage**: MinIO
 - **Task Queue**: Celery
-- **AI**: NVIDIA NIM / OpenRouter / OpenAI / Gemini with automatic fallback
+- **AI**: NVIDIA only
 
 ### Frontend (Next.js 15 + React 19)
 - **State**: Zustand
@@ -52,10 +52,11 @@ npm run dev
 
 ## 🔧 Configuration
 
-Set at least one AI provider in `backend/.env`:
+Set the NVIDIA credentials in `backend/.env`:
 ```
-AI_PROVIDER=openrouter
-OPENROUTER_API_KEY=your-key
+AI_PROVIDER=nvidia
+NVIDIA_API_KEY=your-key
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
 ## 📚 Features

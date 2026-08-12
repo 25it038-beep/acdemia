@@ -377,7 +377,7 @@ class FileProcessor:
     async def _generate_for_subject(
         self, db: AsyncSession, subject: Subject, user_content: str, source: str
     ) -> None:
-        """Run the Groq structure generation for a subject (shared by file/course paths)."""
+        """Run NVIDIA-based structure generation for a subject (shared by file/course paths)."""
         from app.services.ai_service import ai_provider
         import json as j
 
