@@ -293,7 +293,7 @@ async def explore_unit(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=2048):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():
@@ -378,7 +378,7 @@ async def generate_chapter_material(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=3000):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():

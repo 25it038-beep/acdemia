@@ -301,17 +301,33 @@ class AIProvider:
 
         errors = []
         for provider in providers:
-            try:
-                async for chunk in self._chat_provider(
-                    provider, messages, temperature, max_tokens, stream, task
-                ):
-                    yield chunk
-                return  # stream finished without error
-            except Exception as e:
-                errors.append(f"{provider['name']}: {e}")
-                logger.error(f"AI chat error ({provider['name']} / "
-                             f"{provider['models'].get(task, 'chat')}): {e}")
-                self._mark_dead(provider["name"])
+            # Reasoning models spend tokens on thinking before answering — if the
+            # budget is too small they return empty content. Retry once with a much
+            # larger budget before giving up on this provider.
+            budgets = [max_tokens, max_tokens * 4]
+            for budget in budgets:
+                try:
+                    async for chunk in self._chat_provider(
+                        provider, messages, temperature, budget, stream, task
+                    ):
+                        yield chunk
+                    return  # stream finished without error
+                except EmptyResponseError as e:
+                    logger.warning(
+                        f"AI empty response ({provider['name']} / "
+                        f"{provider['models'].get(task, 'chat')}, budget={budget}): {e} — retrying with larger budget"
+                    )
+                    continue
+                except Exception as e:
+                    errors.append(f"{provider['name']}: {e}")
+                    logger.error(f"AI chat error ({provider['name']} / "
+                                 f"{provider['models'].get(task, 'chat')}): {e}")
+                    self._mark_dead(provider["name"])
+                    break
+            else:
+                # All budgets exhausted for this provider
+                errors.append(f"{provider['name']}: empty response despite larger budget")
+                continue
 
         yield json.dumps({
             "role": "assistant",
