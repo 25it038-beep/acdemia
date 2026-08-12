@@ -60,10 +60,10 @@ class Settings(BaseSettings):
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
     # Per-task models (NVIDIA)
-    CHAT_MODEL: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
-    STEM_MODEL: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
-    CODING_MODEL: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
-    VISION_MODEL: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    CHAT_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
+    STEM_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
+    CODING_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
+    VISION_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
     EMBEDDING_MODEL: str = "nvidia/nv-embedqa-e5-v5"
     RERANK_MODEL: str = "nvidia/nv-embedqa-e5-v5"
 

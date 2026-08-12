@@ -19,10 +19,10 @@ FALLBACK_MODELS: Dict[str, Dict[str, str]] = {
         "embed": "@cf/qwen/qwen3-embedding-0.6b",
     },
     "nvidia": {
-        "chat": "meta/llama-3.1-8b-instruct",
-        "stem": "meta/llama-3.1-8b-instruct",
-        "coding": "meta/llama-3.1-8b-instruct",
-        "vision": "meta/llama-3.1-8b-instruct",
+        "chat": "nvidia/nemotron-3-super-120b-a12b",
+        "stem": "nvidia/nemotron-3-super-120b-a12b",
+        "coding": "nvidia/nemotron-3-super-120b-a12b",
+        "vision": "nvidia/nemotron-3-super-120b-a12b",
         "embed": "nvidia/nv-embedqa-e5-v5",
     },
     "openrouter": {
@@ -246,12 +246,22 @@ class AIProvider:
             })
             return
 
+        extra_kwargs = {}
+        if provider["name"] == "nvidia" and "nemotron-3" in model:
+            extra_kwargs = {
+                "extra_body": {
+                    "chat_template_kwargs": {"enable_thinking": True},
+                    "reasoning_budget": max(max_tokens, 2048),
+                }
+            }
+
         response = await client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             stream=stream,
+            **extra_kwargs,
         )
         if stream:
             saw_content = False
