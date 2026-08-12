@@ -255,14 +255,33 @@ class AIProvider:
                 }
             }
 
-        response = await client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=stream,
-            **extra_kwargs,
-        )
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=stream,
+                **extra_kwargs,
+            )
+        except Exception as e:
+            # NVIDIA returns 404 when the base URL lacks the /v1 suffix
+            # (or points at a stale endpoint). Rebuild the client against the
+            # canonical endpoint and retry once.
+            if provider["name"] == "nvidia" and "404" in str(e):
+                import openai as _openai
+                canonical = "https://integrate.api.nvidia.com/v1"
+                client = _openai.AsyncOpenAI(api_key=client.api_key, base_url=canonical)
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=stream,
+                    **extra_kwargs,
+                )
+            else:
+                raise
         if stream:
             saw_content = False
             async for chunk in response:
