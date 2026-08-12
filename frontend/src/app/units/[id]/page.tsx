@@ -40,6 +40,7 @@ export default function UnitDetailPage() {
   const [input, setInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,12 +121,14 @@ export default function UnitDetailPage() {
   };
 
   const startUnitAssessment = async () => {
+    setAssessmentError(null);
     setQuizLoading(true);
     try {
       const res = await api.createUnitAssessment(unitId);
       router.push(`/quizzes?quiz_id=${res.quiz_id}`);
-    } catch {
-      // ignore
+    } catch (err: any) {
+      console.error('Failed to start unit assessment:', err);
+      setAssessmentError(err.response?.data?.detail || err.message || 'Failed to start the unit assessment. Please try again.');
     } finally {
       setQuizLoading(false);
     }
@@ -168,6 +171,11 @@ export default function UnitDetailPage() {
             Unit Assessment
           </button>
         </div>
+        {assessmentError && (
+          <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {assessmentError}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

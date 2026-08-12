@@ -46,6 +46,7 @@ function WorkflowPageInner() {
   const [exploration, setExploration] = useState<any>(null);
   const [exploring, setExploring] = useState(false);
   const [startingQuiz, setStartingQuiz] = useState(false);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [nextWorkflow, setNextWorkflow] = useState<any>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -147,12 +148,14 @@ function WorkflowPageInner() {
 
   const startAssessment = async () => {
     if (!selectedUnit) return;
+    setAssessmentError(null);
     setStartingQuiz(true);
     try {
       const res = await api.createUnitAssessment(selectedUnit.id);
       router.push(`/quizzes?quiz_id=${res.quiz_id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start assessment:', err);
+      setAssessmentError(err.response?.data?.detail || err.message || 'Failed to start the unit assessment. Please try again.');
     } finally {
       setStartingQuiz(false);
     }
@@ -258,6 +261,12 @@ function WorkflowPageInner() {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
+
+                  {assessmentError && (
+                    <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                      {assessmentError}
+                    </div>
+                  )}
 
                   {selectedUnit.status === 'locked' ? (
                     <div className="text-sm text-white/50">

@@ -13,6 +13,7 @@ export default function CourseDetailPage() {
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [quizLoading, setQuizLoading] = useState<string | null>(null);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) loadData();
@@ -30,12 +31,14 @@ export default function CourseDetailPage() {
   };
 
   const startUnitAssessment = async (unit: any) => {
+    setAssessmentError(null);
     setQuizLoading(unit.id);
     try {
       const res = await api.createUnitAssessment(unit.id);
       router.push(`/quizzes?quiz_id=${res.quiz_id}`);
-    } catch {
-      // ignore
+    } catch (err: any) {
+      console.error('Failed to start unit assessment:', err);
+      setAssessmentError(err.response?.data?.detail || err.message || 'Failed to start the unit assessment. Please try again.');
     } finally {
       setQuizLoading(null);
     }
@@ -91,14 +94,29 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
+      {assessmentError && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {assessmentError}
+        </div>
+      )}
+
       {/* Units */}
       <div className="space-y-3">
         {units.map((unit) => (
-          <div key={unit.id} className="glass rounded-xl border border-white/10 overflow-hidden">
-            <button
-              onClick={() => router.push(`/units/${unit.id}`)}
-              className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-            >
+          <div
+            key={unit.id}
+            className="glass rounded-xl border border-white/10 overflow-hidden"
+            onClick={() => router.push(`/units/${unit.id}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push(`/units/${unit.id}`);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
                 <ChevronRight className="w-5 h-5 text-indigo-400" />
                 <div className="text-left">
@@ -122,7 +140,7 @@ export default function CourseDetailPage() {
                 </button>
                 <span className="text-xs text-white/30">{unit.chapter_count} chapters</span>
               </div>
-            </button>
+            </div>
           </div>
         ))}
       </div>
