@@ -147,11 +147,14 @@ class AIProvider:
             if not (settings.NVIDIA_API_KEY or settings.NVIDIA_CODING_API_KEY
                     or settings.NVIDIA_VISION_API_KEY):
                 return None
+            nvidia_base = settings.NVIDIA_BASE_URL
+            if "integrate.api.nvidia.com" in nvidia_base and not nvidia_base.rstrip("/").endswith("/v1"):
+                nvidia_base = nvidia_base.rstrip("/") + "/v1"
             client = _make_client(
                 settings.NVIDIA_API_KEY
                 or settings.NVIDIA_CODING_API_KEY
                 or settings.NVIDIA_VISION_API_KEY,
-                settings.NVIDIA_BASE_URL,
+                nvidia_base,
             )
             models = {
                 "chat": settings.CHAT_MODEL,
