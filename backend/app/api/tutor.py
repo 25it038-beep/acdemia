@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, delete
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.models import Subject, Topic, Concept, ChatHistory, Quiz, Question, QuizResponse, LearningProgress, File, Chunk, Chapter, Unit, Notification, to_uuid
@@ -30,7 +30,16 @@ async def _build_context(
     subject_id: Optional[uuid.UUID],
     topic_id: Optional[uuid.UUID],
 ) -> tuple[str, Optional[Subject]]:
-    """Gather course material context from uploaded files/chunks relevant to the question."""
+    """Gather course context: AI-generated study material + uploaded files/chunks.
+
+    The tutor explains the learner's OWN course, so it needs:
+    1. The subject info.
+    2. AI-generated study material (unit explorations + chapter materials),
+       which is exactly the content the learner reads in the app.
+    3. Uploaded file content — from chunks when available, otherwise
+       straight from the file's extracted_text (files that failed
+       embedding/normalization still get used).
+    """
     subject = None
     context_parts = []
 
@@ -42,43 +51,78 @@ async def _build_context(
                 f"Course: {subject.name}\n{subject.description or ''}".strip()
             )
 
-    # Collect chunks from the user's files (scoped to selected subject, or all files)
+    query_terms = set(_tokenize(message))
+    budget = 14000  # total context chars budget
+
+    # --- 1) AI-generated study material (unit exploration + chapter material) ---
+    if subject_id:
+        units = (await db.execute(
+            select(Unit).where(Unit.subject_id == subject_id).order_by(Unit.order)
+        )).scalars().all()
+        material_parts = []
+        for unit in units:
+            if unit.exploration and len(unit.exploration) < 15000:
+                material_parts.append(f"[Unit: {unit.name}]\n{unit.exploration}")
+        chapter_ids = [u.id for u in units]
+        if chapter_ids:
+            chapters = (await db.execute(
+                select(Chapter).where(Chapter.unit_id.in_(chapter_ids)).order_by(Chapter.order)
+            )).scalars().all()
+        else:
+            chapters = []
+        for ch in chapters:
+            if ch.material and len(ch.material) < 15000:
+                material_parts.append(f"[Chapter: {ch.name}]\n{ch.material}")
+        used = 0
+        for part in material_parts:
+            if used >= budget:
+                break
+            context_parts.append(part)
+            used += len(part)
+        if material_parts:
+            context_parts.insert(0, f"=== GENERATED STUDY MATERIAL (the course content) ===\n")
+
+    # --- 2) Uploaded file content ---
     file_stmt = select(File).where(File.user_id == user.id)
     if subject_id:
         file_stmt = file_stmt.where(File.subject_id == subject_id)
-    file_stmt = file_stmt.where(File.status == "completed").order_by(File.created_at.desc()).limit(10)
+    file_stmt = file_stmt.order_by(File.created_at.desc()).limit(10)
     files = (await db.execute(file_stmt)).scalars().all()
 
+    used = 0
     if files:
-        chunk_stmt = (
-            select(Chunk)
-            .where(Chunk.file_id.in_([f.id for f in files]))
-            .order_by(Chunk.chunk_index)
-        )
-        chunks = (await db.execute(chunk_stmt)).scalars().all()
-    else:
-        chunks = []
+        file_parts = []
+        for f in files:
+            snippet = (f.extracted_text or "").strip()
+            if not snippet:
+                continue
+            # Use chunks when present (better relevance), else raw extracted text
+            chunks = (await db.execute(
+                select(Chunk).where(Chunk.file_id == f.id).order_by(Chunk.chunk_index)
+            )).scalars().all()
+            content_sources = [c.content for c in chunks] if chunks else [snippet]
+            for i, src in enumerate(content_sources):
+                text = (src or "").strip()
+                if not text:
+                    continue
+                terms = sum(1 for t in query_terms if t in text.lower())
+                if terms > 0 or not query_terms:
+                    file_parts.append((terms, f"[From your file: {f.original_filename}]\n{text}"))
+        # Sort by relevance (best matches first), include all when few
+        file_parts.sort(key=lambda x: -x[0])
+        for _, part in file_parts:
+            if used >= budget:
+                break
+            context_parts.append(part)
+            used += len(part)
+        if file_parts:
+            if "#" not in context_parts[0]:
+                context_parts.insert(0, f"=== UPLOADED FILE MATERIAL ===\n")
 
-    if chunks:
-        # Simple relevance scoring (keyword overlap) since vector store may be unavailable
-        query_terms = set(_tokenize(message))
-
-        def score(chunk: Chunk) -> float:
-            text = (chunk.content or "").lower()
-            return sum(1 for t in query_terms if t in text)
-
-        scored = sorted(chunks, key=score, reverse=True)
-        # Include all chunks when few, otherwise the top relevant ones
-        top = scored[:12] if len(scored) > 12 else scored
-        for c in top:
-            snippet = (c.content or "").strip()
-            if snippet:
-                context_parts.append(snippet)
-
-    if context_parts:
+    if len(context_parts) > 1 or (context_parts and not context_parts[0].startswith("Course:")):
         joined = "\n\n".join(context_parts)
-        return f"=== COURSE MATERIAL (use this to answer) ===\n{joined[:12000]}", subject
-    return "", subject
+        return f"{joined[:budget + 2000]}", subject
+    return "".join(context_parts) if context_parts else "", subject
 
 
 def _tokenize(text: str) -> list[str]:
@@ -174,6 +218,34 @@ async def list_chat_sessions(
             )
         )
     return sessions
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Delete an entire chat conversation (scoped to the authenticated user)."""
+    result = await db.execute(
+        select(func.count(ChatHistory.id)).where(
+            ChatHistory.session_id == session_id,
+            ChatHistory.user_id == user.id,
+        )
+    )
+    count = result.scalar_one()
+    if count == 0:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await db.execute(
+        delete(ChatHistory).where(
+            ChatHistory.session_id == session_id,
+            ChatHistory.user_id == user.id,
+        )
+    )
+    await db.commit()
+    logger.info(f"Deleted chat session {session_id} for user {user.id} ({count} messages)")
+    return {"message": "Conversation deleted", "deleted_messages": count}
 
 
 @router.get("/history", response_model=List[ChatMessageOut])
@@ -315,17 +387,21 @@ Rules:
                 + "\n".join(chapter_parts)
             )
 
-    # Get course material context from uploaded files
+    # Get course context from study material + uploaded files
     course_context, subject = await _build_context(db, user, data.message, data.subject_id, data.topic_id)
     if course_context:
         context_text += f"\n\n{course_context}"
         context_text += (
-            "\n\nIMPORTANT INSTRUCTIONS FOR COURSE MATERIAL:"
-            "\n- The 'COURSE MATERIAL' section above comes from the student's uploaded files."
-            "\n- When the question relates to course content, teach FROM this material."
-            "\n- Reference specific facts, definitions, examples, or figures from the material."
-            "\n- If the material does not cover the question, say so briefly, then teach with general knowledge."
-            "\n- Never invent facts that contradict the provided course material."
+            "\n\nIMPORTANT INSTRUCTIONS FOR COURSE CONTENT:"
+            "\n- 'GENERATED STUDY MATERIAL' is the learner's actual course content in the app"
+            " (unit explorations and chapter lessons). Teach FROM it, reference its sections,"
+            " definitions, examples, diagrams, and formulas."
+            "\n- 'UPLOADED FILE MATERIAL' comes from files the learner uploaded."
+            "\n- When a question relates to the course, always ground the answer in this"
+            " material; quote names of units/chapters/files you are using."
+            "\n- If the material does not cover the question, say so briefly, then teach with"
+            " general knowledge."
+            "\n- Never invent facts that contradict the provided material."
         )
 
     # Pull relevant past conversations as reference
