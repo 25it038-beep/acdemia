@@ -33,6 +33,30 @@ _HTTP_LIMITS = httpx.Limits(
 )
 _SHARED_HTTP_CLIENT: Optional[httpx.AsyncClient] = None
 
+# Marker embedded in generated content. Older cached content (whitespace-stripped
+# artifacts from nemotron-3.5 thinking mode) lacks it and is regenerated.
+CACHE_VERSION = "<!--academia-v3-->"
+
+
+def normalize_ai_markdown(text: str) -> str:
+    """Clean up model output before caching.
+
+    - Converts <center>mermaid ... </center> wrappers into proper fenced
+      code blocks so diagrams actually render.
+    - Strips stray HTML wrapper tags.
+    - Inserts the cache-version marker.
+    """
+    if not text:
+        return text
+    text = re.sub(
+        r"<center>\s*mermaid\s*([\s\S]*?)</center>",
+        lambda m: "```mermaid\n" + m.group(1).strip() + "\n```",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r"</?center>", "", text)
+    return CACHE_VERSION + "\n" + text.strip()
+
 
 def _get_http_client() -> httpx.AsyncClient:
     global _SHARED_HTTP_CLIENT
@@ -42,15 +66,23 @@ def _get_http_client() -> httpx.AsyncClient:
 
 
 def _strip_think(text: str) -> str:
-    """Remove reasoning blocks some NVIDIA reasoning models may wrap in <think> tags."""
+    """Remove reasoning blocks some NVIDIA reasoning models may wrap in  thinking tags.
+
+    IMPORTANT: must NOT strip() plain text — streamed chunks arrive one token
+    at a time (often just ' word'), and stripping each chunk removes every
+    leading space, concatenating the whole output into one unreadable blob.
+    Only touch text that actually contains reasoning markers.
+    """
     if not text:
         return text
-    stripped = THINK_BLOCK_RE.sub("", text).strip()
+    if "<think" not in text and not THINK_BLOCK_RE.search(text):
+        return text
+    stripped = THINK_BLOCK_RE.sub("", text)
     if "<think" in stripped:
         # Block was truncated (no closing tag) — keep whatever follows the opening tag
         idx = stripped.find("<think")
-        return stripped[idx + len("<think"):].strip()
-    return stripped
+        stripped = stripped[idx + len("<think"):]
+    return stripped.strip()
 
 
 class EmptyResponseError(Exception):
@@ -179,16 +211,23 @@ class AIProvider:
         model = provider["models"].get(task) or provider["models"]["chat"]
 
         extra_kwargs: Dict[str, Any] = {}
-        if "nemotron-3" in model:
-            # Reasoning budget: keep it tight for chat to avoid the model
-            # spending thousands of tokens on internal thinking for simple
-            # questions. 512 gives good quality while cutting TTFT in half.
-            # For STEM/coding tasks we allow more budget automatically.
-            thinking_budget = 512 if task == "chat" else 1024
+        if "nemotron-3-super" in model:
+            # Nemotron-3-super emits high-quality reasoning output; a tight
+            # reasoning budget keeps time-to-first-token low.
+            thinking_budget = 512 if task == "coding" else 384
             extra_kwargs = {
                 "extra_body": {
                     "chat_template_kwargs": {"enable_thinking": True},
                     "reasoning_budget": thinking_budget,
+                }
+            }
+        elif "nemotron-3.5" in model or "lightning" in model:
+            # Nemotron-3.5 Lightning DROPS ALL WHITESPACE from streamed output
+            # when thinking is enabled (verified: 0 spaces / 0 newlines), which
+            # corrupts markdown. Thinking off fixes formatting and is ~5x faster.
+            extra_kwargs = {
+                "extra_body": {
+                    "chat_template_kwargs": {"enable_thinking": False}
                 }
             }
 

@@ -250,7 +250,7 @@ async def explore_unit(
     user=Depends(get_current_user),
 ):
     """Deep-exploration module for a workflow (unit). Cached in unit.exploration."""
-    from app.services.ai_service import ai_provider
+    from app.services.ai_service import ai_provider, normalize_ai_markdown, CACHE_VERSION
 
     unit_result = await db.execute(
         select(Unit, Subject.name)
@@ -262,7 +262,7 @@ async def explore_unit(
         raise HTTPException(status_code=404, detail="Unit not found")
     unit, course_name = row[0], row[1]
 
-    if unit.exploration:
+    if unit.exploration and CACHE_VERSION in unit.exploration:
         return {"unit_id": str(unit.id), "content": unit.exploration, "cached": True}
 
     chapters = (await db.execute(
@@ -293,7 +293,7 @@ async def explore_unit(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192, task="stem"):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=4096, task="stem"):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():
@@ -302,9 +302,9 @@ async def explore_unit(
     if not content.strip():
         raise HTTPException(status_code=502, detail="AI unavailable — try again shortly (rate limit?)")
 
-    unit.exploration = content
+    unit.exploration = normalize_ai_markdown(content)
     await db.commit()
-    return {"unit_id": str(unit.id), "content": content, "cached": False}
+    return {"unit_id": str(unit.id), "content": unit.exploration, "cached": False}
 
 
 @router.post("/chapters/{chapter_id}/material")
@@ -314,7 +314,7 @@ async def generate_chapter_material(
     user=Depends(get_current_user),
 ):
     """Generate the FULL detailed lesson material for a chapter (cached in chapter.material)."""
-    from app.services.ai_service import ai_provider
+    from app.services.ai_service import ai_provider, normalize_ai_markdown, CACHE_VERSION
 
     chapter_result = await db.execute(
         select(Chapter, Unit.name, Subject.name)
@@ -327,7 +327,7 @@ async def generate_chapter_material(
         raise HTTPException(status_code=404, detail="Chapter not found")
     chapter, unit_name, course_name = row[0], row[1], row[2]
 
-    if chapter.material:
+    if chapter.material and CACHE_VERSION in chapter.material:
         return {"chapter_id": str(chapter.id), "content": chapter.material, "cached": True}
 
     topics = (await db.execute(
@@ -378,7 +378,7 @@ async def generate_chapter_material(
     content = ""
     for _ in range(2):
         content = ""
-        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=8192, task="stem"):
+        async for chunk in ai_provider.chat(messages, temperature=0.5, max_tokens=4096, task="stem"):
             data = json.loads(chunk)
             content += data.get("content", "")
         if content.strip():
@@ -387,9 +387,9 @@ async def generate_chapter_material(
     if not content.strip():
         raise HTTPException(status_code=502, detail="AI unavailable — try again shortly (rate limit?)")
 
-    chapter.material = content
+    chapter.material = normalize_ai_markdown(content)
     await db.commit()
-    return {"chapter_id": str(chapter.id), "content": content, "cached": False}
+    return {"chapter_id": str(chapter.id), "content": chapter.material, "cached": False}
 
 
 @router.post("/units/{unit_id}/assessment")

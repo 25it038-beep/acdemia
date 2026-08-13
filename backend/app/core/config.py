@@ -50,11 +50,11 @@ class Settings(BaseSettings):
     NVIDIA_RIVA_API_KEY: Optional[str] = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
-    # Per-task models (NVIDIA)
-    CHAT_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
-    STEM_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
-    CODING_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
-    VISION_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
+# Per-task models (NVIDIA)
+    CHAT_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    STEM_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    CODING_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    VISION_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
     EMBEDDING_MODEL: str = "nvidia/nv-embedqa-e5-v5"
     RERANK_MODEL: str = "nvidia/nv-embedqa-e5-v5"
 

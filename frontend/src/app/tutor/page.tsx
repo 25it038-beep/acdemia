@@ -89,10 +89,22 @@ export default function TutorPage() {
     inputRef.current?.focus();
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    setInput('');
+    inputRef.current?.focus();
+  };
+
   const switchSession = (id: string) => {
     if (id === sessionId) return;
     setSessionId(id);
     setInput('');
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    setInput('');
+    inputRef.current?.focus();
   };
 
   const sendMessage = async () => {
