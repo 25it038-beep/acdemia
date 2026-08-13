@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import {
   Send, Bot, User, Brain, BookOpen, Code2, MessageSquare,
-  Sparkles, StopCircle, Mic, Volume2, RefreshCw, BookMarked
+  Sparkles, StopCircle, Mic, Volume2, RefreshCw, BookMarked, Trash2
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -99,12 +99,6 @@ export default function TutorPage() {
     if (id === sessionId) return;
     setSessionId(id);
     setInput('');
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-    setInput('');
-    inputRef.current?.focus();
   };
 
   const sendMessage = async () => {
@@ -309,6 +303,15 @@ export default function TutorPage() {
             >
               <RefreshCw className="w-4 h-4 text-white/50" />
             </button>
+            {messages.length > 0 && (
+              <button
+                onClick={clearChat}
+                className="w-9 h-9 rounded-lg glass glass-hover flex items-center justify-center"
+                title="Clear chat"
+              >
+                <Trash2 className="w-4 h-4 text-white/50" />
+              </button>
+            )}
           </div>
         </div>
 
