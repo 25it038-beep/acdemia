@@ -186,6 +186,8 @@ export interface ChatMessage {
   mode: string;
   subject_id?: string;
   topic_id?: string;
+  unit_id?: string;
+  chapter_id?: string;
 }
 
 export interface ChatResponse {

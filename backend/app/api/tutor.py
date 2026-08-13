@@ -272,6 +272,49 @@ Rules:
         if topic and topic.content:
             context_text = f"\nContext from {topic.name}:\n{topic.content[:2000]}"
 
+    # Context from the currently open chapter / unit (generated study material)
+    if data.chapter_id or data.unit_id:
+        open_chapter = None
+        if data.chapter_id:
+            chapter_result = await db.execute(
+                select(Chapter)
+                .join(Unit, Chapter.unit_id == Unit.id)
+                .join(Subject, Unit.subject_id == Subject.id)
+                .where(Chapter.id == data.chapter_id, Subject.user_id == user.id)
+            )
+            open_chapter = chapter_result.scalar_one_or_none()
+        if open_chapter is None and data.unit_id:
+            # No chapter given (or not found) — fall back to any chapter of the unit
+            first_chapter = await db.scalar(
+                select(Chapter)
+                .join(Unit, Chapter.unit_id == Unit.id)
+                .join(Subject, Unit.subject_id == Subject.id)
+                .where(Unit.id == data.unit_id, Subject.user_id == user.id)
+                .order_by(Chapter.order)
+                .limit(1)
+            )
+            if first_chapter:
+                open_chapter = first_chapter
+
+        if open_chapter:
+            chapter_parts = [f"Chapter: {open_chapter.name}"]
+            if open_chapter.material:
+                chapter_parts.append(f"Chapter material:\n{open_chapter.material[:8000]}")
+            else:
+                chapter_topics = (await db.execute(
+                    select(Topic).where(Topic.chapter_id == open_chapter.id).order_by(Topic.order)
+                )).scalars().all()
+                if chapter_topics:
+                    topic_text = "\n".join(
+                        f"- {t.name}: {t.content or t.summary or ''}" for t in chapter_topics
+                    )
+                    chapter_parts.append(f"Chapter topics:\n{topic_text[:8000]}")
+            context_text += (
+                "\n\n=== CURRENTLY VIEWED CHAPTER (the student is reading this right now — "
+                "teach from it, reference its sections, examples, and diagrams) ===\n"
+                + "\n".join(chapter_parts)
+            )
+
     # Get course material context from uploaded files
     course_context, subject = await _build_context(db, user, data.message, data.subject_id, data.topic_id)
     if course_context:

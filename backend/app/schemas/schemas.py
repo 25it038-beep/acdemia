@@ -259,6 +259,8 @@ class ChatMessage(BaseModel):
     mode: str = "tutor"
     subject_id: Optional[UUID] = None
     topic_id: Optional[UUID] = None
+    unit_id: Optional[UUID] = None
+    chapter_id: Optional[UUID] = None
 
 
 class ChatResponse(BaseModel):

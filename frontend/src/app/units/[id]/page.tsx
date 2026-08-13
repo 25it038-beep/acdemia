@@ -34,6 +34,7 @@ export default function UnitDetailPage() {
   const [unitMaterial, setUnitMaterial] = useState('');
   const [loadingUnitMaterial, setLoadingUnitMaterial] = useState(false);
   const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [messages, setMessages] = useState<ChatMessageT[]>([]);
@@ -58,6 +59,9 @@ export default function UnitDetailPage() {
       setSubject(unitsData.subject);
       const chaptersData = await api.getChapters(unitsData.subject.id, unitId);
       setChapters(chaptersData);
+      if (chaptersData.length > 0 && !activeChapterId) {
+        setActiveChapterId(chaptersData[0].id);
+      }
       loadUnitMaterial();
       chaptersData.forEach((ch: any) => loadChapterMaterial(ch.id));
     } finally {
@@ -91,8 +95,12 @@ export default function UnitDetailPage() {
 
   const toggleChapter = (chapterId: string) => {
     const next = new Set(collapsedChapters);
-    if (next.has(chapterId)) next.delete(chapterId);
-    else next.add(chapterId);
+    if (next.has(chapterId)) {
+      next.delete(chapterId);
+    } else {
+      next.add(chapterId);
+      setActiveChapterId(chapterId);
+    }
     setCollapsedChapters(next);
   };
 
@@ -108,6 +116,8 @@ export default function UnitDetailPage() {
         message: content,
         mode: 'tutor',
         subject_id: subject?.id,
+        unit_id: unitId,
+        chapter_id: activeChapterId || undefined,
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }]);
     } catch {
