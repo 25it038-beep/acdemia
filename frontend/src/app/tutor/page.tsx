@@ -101,6 +101,20 @@ export default function TutorPage() {
     setInput('');
   };
 
+  const deleteSession = async (id: string) => {
+    try {
+      await api.deleteChatSession(id);
+      if (id === sessionId) {
+        setSessionId(Math.random().toString(36).substring(7));
+        setMessages([]);
+        setInput('');
+      }
+      refreshSessions();
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -234,26 +248,37 @@ export default function TutorPage() {
               {sessions.map((s) => {
                 const isActive = s.session_id === sessionId;
                 return (
-                  <button
-                    key={s.session_id}
-                    onClick={() => switchSession(s.session_id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                      isActive
-                        ? 'bg-indigo-500/15 border border-indigo-500/20 text-indigo-300'
-                        : 'text-white/50 hover:text-white/70 hover:bg-white/5'
-                    }`}
-                    title={s.first_message}
-                  >
-                    <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">
-                        {s.first_message || 'Untitled conversation'}
-                      </p>
-                      <p className="text-[10px] text-white/30">
-                        {s.message_count} messages
-                      </p>
-                    </div>
-                  </button>
+                  <div key={s.session_id} className="relative group">
+                    <button
+                      onClick={() => switchSession(s.session_id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 pr-8 rounded-xl text-left transition-all ${
+                        isActive
+                          ? 'bg-indigo-500/15 border border-indigo-500/20 text-indigo-300'
+                          : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+                      }`}
+                      title={s.first_message}
+                    >
+                      <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          {s.first_message || 'Untitled conversation'}
+                        </p>
+                        <p className="text-[10px] text-white/30">
+                          {s.message_count} messages
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSession(s.session_id);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg bg-white/5 hover:bg-red-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-3 h-3 text-red-400" />
+                    </button>
+                  </div>
                 );
               })}
             </div>

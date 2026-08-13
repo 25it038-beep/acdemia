@@ -149,6 +149,11 @@ class ApiClient {
     return res.data;
   }
 
+  async deleteChatSession(sessionId: string) {
+    const res = await this.client.delete(`/api/tutor/sessions/${encodeURIComponent(sessionId)}`);
+    return res.data;
+  }
+
   async getChatHistory(sessionId: string) {
     const res = await this.client.get('/api/tutor/history', {
       params: { session_id: sessionId },
